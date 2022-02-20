@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2">
+  <class name="Parse.Core.Domain.OINV,Parse.Core" table="OINV" dynamic-update="true">
+    <id name="DocEntry" column="DocEntry" type="int">
+      <generator class="identity" />
+    </id>
+    <property name="CANCELED" column="CANCELED" type="char"/>
+    <property name="DocDate" column="DocDate" type="DateTime"/>
+    <property name="CardCode" column="CardCode" type="string" length="15"/>
+    <property name="Address" column="Address" type="string" length="254"/>
+    <property name="Comments" column="Comments" type="string" length="254"/>
+    <property name="GroupNum" column="GroupNum" type="int"/>
+    <property name="LicTradNum" column="LicTradNum" type="string" length="32"/>
+    <property name="TrackNo" column="TrackNo" type="string" length="30"/>
+    <property name="U_GINo" column="U_GINo" type="string" length="25"/>
+    <property name="U_DeductType" column="U_DeductType" type="string" length="200"/>
+    <property name="DiscSum" column="DiscSum" type="decimal"/>
+  </class>
+</hibernate-mapping>

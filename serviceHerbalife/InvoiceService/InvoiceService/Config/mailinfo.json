@@ -1,0 +1,9 @@
+﻿{
+  "Host": "smtp.gmail.com",
+  "Port": "587",
+  "EnableSsl": "true",
+  "Username": "minhkien11@gmail.com",
+  "Password": "5z7tu8wt0f",
+  "From": "minhkien11@gmail.com",
+  "To": "minhkien11@gmail.com"
+}

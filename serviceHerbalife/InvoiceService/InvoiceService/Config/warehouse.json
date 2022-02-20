@@ -1,0 +1,20 @@
+﻿{
+  "WarehouseMapping": [
+    {
+      "Warehouse": ["VA", "VB", "VG", "VP", "VT", "VO"],
+      "Taxcode": "0309069208",
+      "Pattern": "01GTKT0/001",
+      "Serial": "AA/19E",
+      "ResendPattern": "01GTKT0/001",
+      "ResendSerial": "AB/19E"
+    },
+    {
+      "Warehouse": [ "VF", "VD" ],
+      "Taxcode": "0309069208-001",
+      "Pattern": "01GTKT0/001",
+      "Serial": "AC/19E",
+      "ResendPattern": "01GTKT0/001",
+      "ResendSerial": "AD/19E"
+    }
+  ]
+}

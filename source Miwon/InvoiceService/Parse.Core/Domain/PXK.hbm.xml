@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2">
+  <class name="Parse.Core.Domain.PXK,Parse.Core" table="PXK" dynamic-update="true">
+    <id name="PXK_Id" column="PXK_Id" type="int">
+      <generator class="identity" />
+    </id>
+    <property name="Fkey" column="Fkey" type="string" length="50"/>
+    <property name="CommandDate" column="CommandDate" type="DateTime"/>
+    <property name="CommandOf" column="CommandOf" type="string" length="250"/>
+    <property name="CommandDescription" column="CommandDescription" type="string" length="250"/>
+    <property name="Transporter" column="Transporter" type="string" length="250"/>
+    <property name="ContractNo" column="ContractNo" type="string" length="50"/>
+    <property name="TransportMethod" column="TransportMethod" type="string" length="250"/>
+    <property name="ExportAt" column="ExportAt" type="string" length="250"/>
+    <property name="ImportAt" column="ImportAt" type="string" length="250"/>
+    <property name="Total" column="Total" type="decimal"/>
+    <property name="Type" column="Type" type="int"/>
+    <property name="PreFkey" column="PreFkey" type="string" length="50"/>
+    <property name="TaxCode" column="TaxCode" type="string" length="20"/>
+    <property name="CreatedDate" column="CreatedDate" type="DateTime"/>
+    <property name="Pattern" column="Pattern" type="string" length="20"/>
+    <property name="Serial" column="Serial" type="string" length="20"/>
+    <property name="InvNo" column="InvNo" type="string" length="20"/>
+    <property name="ErrorCode" column="ErrorCode" type="string" length="50"/>
+    <property name="ErrorDesc" column="ErrorDesc" type="string" length="1000"/>
+    <property name="Status" column="Status" type="int"/>
+
+    <bag name="lstDetail"  table="PXK_Detail"  cascade="none"  inverse="true" lazy="true" >
+      <key column="PXK_Id"  />
+      <one-to-many  class="Parse.Core.Domain.PXK_Detail, Parse.Core"/>
+    </bag>
+
+  </class>
+</hibernate-mapping>

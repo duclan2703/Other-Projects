@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2">
+  <class name="Parse.Core.Domain.OCRD,Parse.Core" table="OCRD" dynamic-update="true">
+    <id name="CardCode" column="CardCode" type="string" length="15">
+      <generator class="identity" />
+    </id>
+    <property name="E_Mail" column="E_Mail" type="string" length="100"/>
+    <property name="CardName" column="CardName" type="string" length="100"/>
+    <property name="AliasName" column="AliasName" type="string"/>
+  </class>
+</hibernate-mapping>

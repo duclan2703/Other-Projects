@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2">
+  <class name="Parse.Core.Domain.INV1,Parse.Core" table="INV1" dynamic-update="true">
+    <id name="DocEntry" column="DocEntry" type="int">
+      <generator class="identity" />
+    </id>
+    <property name="ItemCode" column="ItemCode" type="string" length="20"/>
+    <property name="ItemCode" column="ItemCode" type="string" length="20"/>
+    <property name="Dscription" column="Dscription" type="string" length="100"/>
+    <property name="Quantity" column="Quantity" type="decimal"/>
+    <property name="Price" column="Price" type="decimal" />
+    <property name="LineTotal" column="LineTotal" type="decimal"/>
+    <property name="FreeTxt" column="FreeTxt" type="string" length="100"/>
+    <property name="unitMsr" column="unitMsr" type="string" length="100"/>
+  </class>
+</hibernate-mapping>

@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2">
+  <class name="Parse.Core.Domain.PXK_Detail,Parse.Core" table="PXK_Detail" dynamic-update="true">
+    <id name="PXK_Detail_Id" column="PXK_Detail_Id" type="int">
+      <generator class="identity" />
+    </id>
+    <property name="PXK_Id" column="PXK_Id" type="int"/>
+    <property name="Code" column="Code" type="string" length="50"/>
+    <property name="Description" column="Description" type="string" length="250"/>
+    <property name="Quantity" column="Quantity" type="int"/>
+    <property name="Unit" column="Unit" type="string" length="20"/>
+    <property name="Price" column="Price" type="decimal"/>
+    <property name="Total" column="Total" type="decimal"/>
+  </class>
+</hibernate-mapping>

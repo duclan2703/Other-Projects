@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2">
+  <class name="Parse.Core.Domain.HDDT_Detail,Parse.Core" table="HDDT_Detail" dynamic-update="true">
+    <id name="HDDT_Detail_Id" column="HDDT_Detail_Id" type="int">
+      <generator class="identity" />
+    </id>
+    <property name="HDDT_Id" column="HDDT_Id" type="int"/>
+    <property name="Code" column="Code" type="string" length="50"/>
+    <property name="Description" column="Description" type="string" length="250"/>
+    <property name="Quantity" column="Quantity" type="int"/>
+    <property name="Unit" column="Unit" type="string" length="20"/>
+    <property name="Price" column="Price" type="decimal"/>
+    <property name="Total" column="Total" type="decimal"/>
+    <property name="VatRate" column="VatRate" type="decimal"/>
+    <property name="VatAmount" column="VatAmount" type="decimal"/>
+    <property name="TotalAmount" column="TotalAmount" type="decimal"/>
+  </class>
+</hibernate-mapping>

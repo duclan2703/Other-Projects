@@ -1,0 +1,15 @@
+﻿{
+  "FtpLink": "eftp.hrbl.com",
+  "FtpUsername": "FTP_vneinvoice",
+  "FtpPassword": "Herb@12345qwert",
+  "NewIssueXMLPath": "/Prod/NTS/XML/",
+  "IssueSuccessPath": "/Prod/NTS/Success",
+  "IssueFailedPath": "/Prod/NTS/Failed",
+  "ReIssuePath": "/Prod/NTS/Resend",
+  "AdjustXMLPath": "",
+  "AdjustSuccessPath" : "",
+  "AdjustFailedPath" : "",
+  "CancelXMLPath": "/Prod/Cancellation/XML",
+  "CancelSuccessPath": "/Prod/Cancellation/Success",
+  "CancelFailedPath": "/Prod/Cancellation/Failed"
+}

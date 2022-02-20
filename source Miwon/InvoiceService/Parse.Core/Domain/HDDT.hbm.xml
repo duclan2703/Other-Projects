@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2">
+  <class name="Parse.Core.Domain.HDDT,Parse.Core" table="HDDT" dynamic-update="true">
+    <id name="HDDT_Id" column="HDDT_Id" type="int">
+      <generator class="identity" />
+    </id>
+    <property name="Fkey" column="Fkey" type="string" length="50"/>
+    <property name="Pattern" column="Pattern" type="string" length="20"/>
+    <property name="Serial" column="Serial" type="string" length="20"/>
+    <property name="Buyer" column="Buyer" type="string" length="250"/>
+    <property name="CusCode" column="CusCode" type="string" length="50"/>
+    <property name="CusName" column="CusName" type="string" length="250"/>
+    <property name="CusAddress" column="CusAddress" type="string" length="250"/>
+    <property name="CusTaxCode" column="CusTaxCode" type="string" length="50"/>
+    <property name="Currency" column="Currency" type="string" length="20"/>
+    <property name="Total" column="Total" type="decimal"/>
+    <property name="TaxAmount" column="TaxAmount" type="decimal"/>
+    <property name="Discount" column="Discount" type="decimal"/>
+    <property name="TotalAmount" column="TotalAmount" type="decimal"/>
+    <property name="Type" column="Type" type="int"/>
+    <property name="PreFkey" column="PreFkey" type="string" length="50"/>
+    <property name="TaxCode" column="TaxCode" type="string" length="20"/>
+    <property name="CreatedDate" column="CreatedDate" type="DateTime"/>
+    <property name="InvNo" column="InvNo" type="string" length="20"/>
+    <property name="ErrorCode" column="ErrorCode" type="string" length="50"/>
+    <property name="ErrorDesc" column="ErrorDesc" type="string" length="1000"/>
+    <property name="Status" column="Status" type="int"/>
+    <property name="Note" column="Note" type="string" length="250"/>
+    <property name="CusEmail" column="CusEmail" type="string" length="250"/>
+
+
+    <bag name="lstDetail"  table="HDDT_Detail"  cascade="none"  inverse="true" lazy="true" >
+      <key column="HDDT_Id"  />
+      <one-to-many  class="Parse.Core.Domain.HDDT_Detail, Parse.Core"/>
+    </bag>
+
+  </class>
+</hibernate-mapping>
