@@ -54,7 +54,7 @@ namespace InvoiceService
             try
             {
                 #region test
-                string fileTest = @"E:\VN_EINVOICE_ADJUSTMENT_VN01442103_1.xml";
+                string fileTest = @"D:\NTS_VNVGWH_VN03528026_1.xml";
                 type = 1;
                 string messageTest = "";
                 string mesErrorTest = "";
@@ -329,7 +329,7 @@ namespace InvoiceService
 
                 //Parse thông tin chung hóa đơn
                 DataRow infoRow = dSet.Tables["General"].Rows[0];
-                inv.No = infoRow["OrderNumber"].ToString(); 
+                inv.No = infoRow["OrderNumber"].ToString();
                 //inv.FacturaNumber = infoRow["Factura_number"].ToString();
                 inv.OrderMonth = infoRow["OrderMonth"].ToString();
                 if (DateTime.TryParseExact(infoRow["OrderDate"].ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateVal))
@@ -405,10 +405,18 @@ namespace InvoiceService
                 }
 
                 //Parse thông tin payment
+                List<string> lstpayment = new List<string>();
                 if (dSet.Tables.Contains("PaymentReference"))
                 {
-                    DataRow paymentRow = dSet.Tables["PaymentReference"].Rows[0];
-                    inv.PaymentMethod = paymentRow["PaymentType"].ToString();
+                    int paymentCount = dSet.Tables["PaymentReference"].Rows.Count;
+                    if (paymentCount <= 1)
+                        inv.PaymentMethod = dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString();
+                    else
+                    {
+                        for (int i = 0; i < paymentCount; i++)
+                            lstpayment.Add(dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString());
+                        inv.PaymentMethod = string.Join("+", lstpayment);
+                    }
                 }
 
                 //Parse thông tin vận chuyển
