@@ -735,7 +735,7 @@ namespace InvoiceService
             }
             objInvoice.paymentStatus = "true";
 
-            //objInvoice.paymentType = invoice.PaymentMethod;
+            objInvoice.paymentType = invoice.PaymentMethod;
             //objInvoice.paymentTypeName = "0";
             objInvoice.cusGetInvoiceRight = true;
             objInvoice.buyerIdType = "1";
