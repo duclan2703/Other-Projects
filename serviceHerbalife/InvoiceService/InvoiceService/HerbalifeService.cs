@@ -53,8 +53,9 @@ namespace InvoiceService
 
             try
             {
+#if DEBUG
                 #region test
-                string fileTest = @"D:\NTS_VNVGWH_VN03528026_1.xml";
+                string fileTest = @"E:\NTS_VNVGWH_VN03528026_1.xml";
                 type = 1;
                 string messageTest = "";
                 string mesErrorTest = "";
@@ -86,211 +87,210 @@ namespace InvoiceService
                     log.Error("Fail to issue invoice: " + InvTest.No + mesErrorTest);
                 }
                 #endregion
-
+#endif
                 //Xử lý file trong folder
+                foreach (FtpListItem file in client.GetListing(ftpInfo.ReIssuePath).OrderBy(c => c.Modified))
+                {
+                    if (file.Type != FtpFileSystemObjectType.File)
+                        continue;
+                    fileName = file.Name;
+                    fileFullName = file.FullName;
+                    type = 1;
+                    string message = "";
+                    string mesError = "";
+                    string tempFile = AppDomain.CurrentDomain.BaseDirectory + "Temp/temp.xml";
+                    filePath = tempFile;
+                    client.DownloadFile(tempFile, file.FullName);
+                    InvoiceVAT Inv;
+                    DataSet dSet = new DataSet();
+                    dSet.ReadXml(tempFile);
+                    Inv = ConvertToInvoiceVAT(dSet, true, ref mesError);
+                    orderNumber = Inv.No;
 
-                //foreach (FtpListItem file in client.GetListing(ftpInfo.ReIssuePath).OrderBy(c => c.Modified))
-                //{
-                //    if (file.Type != FtpFileSystemObjectType.File)
-                //        continue;
-                //    fileName = file.Name;
-                //    fileFullName = file.FullName;
-                //    type = 1;
-                //    string message = "";
-                //    string mesError = "";
-                //    string tempFile = AppDomain.CurrentDomain.BaseDirectory + "Temp/temp.xml";
-                //    filePath = tempFile;
-                //    client.DownloadFile(tempFile, file.FullName);
-                //    InvoiceVAT Inv;
-                //    DataSet dSet = new DataSet();
-                //    dSet.ReadXml(tempFile);
-                //    Inv = ConvertToInvoiceVAT(dSet, true, ref mesError);
-                //    orderNumber = Inv.No;
+                    //Phát hành hóa đơn
+                    if (string.IsNullOrEmpty(mesError))
+                    {
+                        var InvApi = ConvertToAPIModel(Inv, false);
+                        APIResult result = SendInvoice(apiInfo, InvApi, Inv.ComTaxCode);
+                        WriteNewResult(tempFile, result, Inv.ArisingDate, Inv.Pattern, Inv.Serial);
+                        if (string.IsNullOrEmpty(result.errorCode))
+                        {
+                            message = "Issue invoice successfully: " + Inv.No;
+                            client.UploadFile(tempFile, ftpInfo.IssueSuccessPath + "/" + file.Name);
+                            File.Delete(tempFile);
+                            client.DeleteFile(file.FullName);
+                        }
+                        else
+                        {
+                            message = "Fail to issue invoice: " + Inv.No;
+                            //client.UploadFile(tempFile, ftpInfo.IssueFailedPath + "/" + file.Name);
+                            File.Delete(tempFile);
+                            //client.DeleteFile(file.FullName);
+                            SendFailedMail(file.Name, Inv.No, result.errorCode, result.description, "", type);
+                        }
+                        log.Error(message);
+                    }
+                    else
+                    {
+                        WriteErrorResult(tempFile, mesError);
+                        //client.UploadFile(tempFile, ftpInfo.IssueFailedPath + "/" + file.Name);
+                        File.Delete(tempFile);
+                        //client.DeleteFile(file.FullName);
+                        SendFailedMail(file.Name, Inv.No, "", "", mesError, type);
+                        log.Error("Fail to issue invoice: " + Inv.No + mesError);
+                    }
+                }
 
-                //    //Phát hành hóa đơn
-                //    if (string.IsNullOrEmpty(mesError))
-                //    {
-                //        var InvApi = ConvertToAPIModel(Inv, false);
-                //        APIResult result = SendInvoice(apiInfo, InvApi, Inv.ComTaxCode);
-                //        WriteNewResult(tempFile, result, Inv.ArisingDate, Inv.Pattern, Inv.Serial);
-                //        if (string.IsNullOrEmpty(result.errorCode))
-                //        {
-                //            message = "Issue invoice successfully: " + Inv.No;
-                //            client.UploadFile(tempFile, ftpInfo.IssueSuccessPath + "/" + file.Name);
-                //            File.Delete(tempFile);
-                //            client.DeleteFile(file.FullName);
-                //        }
-                //        else
-                //        {
-                //            message = "Fail to issue invoice: " + Inv.No;
-                //            client.UploadFile(tempFile, ftpInfo.IssueFailedPath + "/" + file.Name);
-                //            File.Delete(tempFile);
-                //            client.DeleteFile(file.FullName);
-                //            SendFailedMail(file.Name, Inv.No, result.errorCode, result.description, "", type);
-                //        }
-                //        log.Error(message);
-                //    }
-                //    else
-                //    {
-                //        WriteErrorResult(tempFile, mesError);
-                //        client.UploadFile(tempFile, ftpInfo.IssueFailedPath + "/" + file.Name);
-                //        File.Delete(tempFile);
-                //        client.DeleteFile(file.FullName);
-                //        SendFailedMail(file.Name, Inv.No, "", "", mesError, type);
-                //        log.Error("Fail to issue invoice: " + Inv.No + mesError);
-                //    }
-                //}
+                foreach (FtpListItem file in client.GetListing(ftpInfo.NewIssueXMLPath).OrderBy(c => c.Modified))
+                {
+                    if (file.Type != FtpFileSystemObjectType.File)
+                        continue;
+                    fileName = file.Name;
+                    fileFullName = file.FullName;
+                    type = 1;
+                    string message = "";
+                    string mesError = "";
+                    string tempFile = AppDomain.CurrentDomain.BaseDirectory + "Temp/temp.xml";
+                    filePath = tempFile;
+                    client.DownloadFile(tempFile, file.FullName);
+                    InvoiceVAT Inv;
+                    DataSet dSet = new DataSet();
+                    dSet.ReadXml(tempFile);
+                    Inv = ConvertToInvoiceVAT(dSet, false, ref mesError);
+                    orderNumber = Inv.No;
 
-                //foreach (FtpListItem file in client.GetListing(ftpInfo.NewIssueXMLPath).OrderBy(c => c.Modified))
-                //{
-                //    if (file.Type != FtpFileSystemObjectType.File)
-                //        continue;
-                //    fileName = file.Name;
-                //    fileFullName = file.FullName;
-                //    type = 1;
-                //    string message = "";
-                //    string mesError = "";
-                //    string tempFile = AppDomain.CurrentDomain.BaseDirectory + "Temp/temp.xml";
-                //    filePath = tempFile;
-                //    client.DownloadFile(tempFile, file.FullName);
-                //    InvoiceVAT Inv;
-                //    DataSet dSet = new DataSet();
-                //    dSet.ReadXml(tempFile);
-                //    Inv = ConvertToInvoiceVAT(dSet, false, ref mesError);
-                //    orderNumber = Inv.No;
+                    //Phát hành hóa đơn
+                    if (string.IsNullOrEmpty(mesError))
+                    {
+                        var InvApi = ConvertToAPIModel(Inv, false);
+                        APIResult result = SendInvoice(apiInfo, InvApi, Inv.ComTaxCode);
+                        WriteNewResult(tempFile, result, Inv.ArisingDate, Inv.Pattern, Inv.Serial);
+                        if (string.IsNullOrEmpty(result.errorCode))
+                        {
+                            message = "Issue invoice successfully: " + Inv.No;
+                            client.UploadFile(tempFile, ftpInfo.IssueSuccessPath + "/" + file.Name);
+                            File.Delete(tempFile);
+                            client.DeleteFile(file.FullName);
+                        }
+                        else
+                        {
+                            message = "Fail to issue invoice: " + Inv.No;
+                            //client.UploadFile(tempFile, ftpInfo.IssueFailedPath + "/" + file.Name);
+                            File.Delete(tempFile);
+                            //client.DeleteFile(file.FullName);
+                            SendFailedMail(file.Name, Inv.No, result.errorCode, result.description, "", type);
+                        }
+                        log.Error(message);
+                    }
+                    else
+                    {
+                        WriteErrorResult(tempFile, mesError);
+                        //client.UploadFile(tempFile, ftpInfo.IssueFailedPath + "/" + file.Name);
+                        File.Delete(tempFile);
+                        //client.DeleteFile(file.FullName);
+                        SendFailedMail(file.Name, Inv.No, "", "", mesError, type);
+                        log.Error("Fail to issue invoice: " + Inv.No + mesError);
+                    }
+                }
 
-                //    //Phát hành hóa đơn
-                //    if (string.IsNullOrEmpty(mesError))
-                //    {
-                //        var InvApi = ConvertToAPIModel(Inv, false);
-                //        APIResult result = SendInvoice(apiInfo, InvApi, Inv.ComTaxCode);
-                //        WriteNewResult(tempFile, result, Inv.ArisingDate, Inv.Pattern, Inv.Serial);
-                //        if (string.IsNullOrEmpty(result.errorCode))
-                //        {
-                //            message = "Issue invoice successfully: " + Inv.No;
-                //            client.UploadFile(tempFile, ftpInfo.IssueSuccessPath + "/" + file.Name);
-                //            File.Delete(tempFile);
-                //            client.DeleteFile(file.FullName);
-                //        }
-                //        else
-                //        {
-                //            message = "Fail to issue invoice: " + Inv.No;
-                //            client.UploadFile(tempFile, ftpInfo.IssueFailedPath + "/" + file.Name);
-                //            File.Delete(tempFile);
-                //            client.DeleteFile(file.FullName);
-                //            SendFailedMail(file.Name, Inv.No, result.errorCode, result.description, "", type);
-                //        }
-                //        log.Error(message);
-                //    }
-                //    else
-                //    {
-                //        WriteErrorResult(tempFile, mesError);
-                //        client.UploadFile(tempFile, ftpInfo.IssueFailedPath + "/" + file.Name);
-                //        File.Delete(tempFile);
-                //        client.DeleteFile(file.FullName);
-                //        SendFailedMail(file.Name, Inv.No, "", "", mesError, type);
-                //        log.Error("Fail to issue invoice: " + Inv.No + mesError);
-                //    }
-                //}
+                foreach (FtpListItem file in client.GetListing(ftpInfo.AdjustXMLPath).OrderBy(c => c.Modified))
+                {
+                    if (file.Type != FtpFileSystemObjectType.File)
+                        continue;
+                    fileName = file.Name;
+                    fileFullName = file.FullName;
+                    type = 2;
+                    string message = "";
+                    string mesError = "";
+                    string tempFile = AppDomain.CurrentDomain.BaseDirectory + "Temp/temp.xml";
+                    filePath = tempFile;
+                    client.DownloadFile(tempFile, file.FullName);
+                    InvoiceVAT Inv;
+                    DataSet dSet = new DataSet();
+                    dSet.ReadXml(tempFile);
+                    Inv = ConvertToInvoiceVAT(dSet, false, ref mesError);
+                    orderNumber = Inv.No;
 
-                //foreach (FtpListItem file in client.GetListing(ftpInfo.AdjustXMLPath).OrderBy(c => c.Modified))
-                //{
-                //    if (file.Type != FtpFileSystemObjectType.File)
-                //        continue;
-                //    fileName = file.Name;
-                //    fileFullName = file.FullName;
-                //    type = 2;
-                //    string message = "";
-                //    string mesError = "";
-                //    string tempFile = AppDomain.CurrentDomain.BaseDirectory + "Temp/temp.xml";
-                //    filePath = tempFile;
-                //    client.DownloadFile(tempFile, file.FullName);
-                //    InvoiceVAT Inv;
-                //    DataSet dSet = new DataSet();
-                //    dSet.ReadXml(tempFile);
-                //    Inv = ConvertToInvoiceVAT(dSet, false, ref mesError);
-                //    orderNumber = Inv.No;
+                    //Phát hành hóa đơn
+                    if (string.IsNullOrEmpty(mesError))
+                    {
+                        var InvApi = ConvertToAPIModel(Inv, true);
+                        APIResult result = SendInvoice(apiInfo, InvApi, Inv.ComTaxCode);
+                        WriteNewResult(tempFile, result, Inv.ArisingDate, Inv.Pattern, Inv.Serial);
+                        if (string.IsNullOrEmpty(result.errorCode))
+                        {
+                            message = "Adjust invoice successfully: " + Inv.No;
+                            client.UploadFile(tempFile, ftpInfo.AdjustSuccessPath + "/" + file.Name);
+                            File.Delete(tempFile);
+                            client.DeleteFile(file.FullName);
+                        }
+                        else
+                        {
+                            message = "Fail to adjust invoice: " + Inv.No;
+                            //client.UploadFile(tempFile, ftpInfo.AdjustFailedPath + "/" + file.Name);
+                            File.Delete(tempFile);
+                            //client.DeleteFile(file.FullName);
+                            SendFailedMail(file.Name, Inv.No, result.errorCode, result.description, "", type);
+                        }
+                        log.Error(message);
+                    }
+                    else
+                    {
+                        WriteErrorResult(tempFile, mesError);
+                        //client.UploadFile(tempFile, ftpInfo.AdjustFailedPath + "/" + file.Name);
+                        File.Delete(tempFile);
+                        //client.DeleteFile(file.FullName);
+                        SendFailedMail(file.Name, Inv.No, "", "", mesError, type);
+                        log.Error("Fail to adjust invoice: " + Inv.No + mesError);
+                    }
+                }
 
-                //    //Phát hành hóa đơn
-                //    if (string.IsNullOrEmpty(mesError))
-                //    {
-                //        var InvApi = ConvertToAPIModel(Inv, true);
-                //        APIResult result = SendInvoice(apiInfo, InvApi, Inv.ComTaxCode);
-                //        WriteNewResult(tempFile, result, Inv.ArisingDate, Inv.Pattern, Inv.Serial);
-                //        if (string.IsNullOrEmpty(result.errorCode))
-                //        {
-                //            message = "Adjust invoice successfully: " + Inv.No;
-                //            client.UploadFile(tempFile, ftpInfo.AdjustSuccessPath + "/" + file.Name);
-                //            File.Delete(tempFile);
-                //            client.DeleteFile(file.FullName);
-                //        }
-                //        else
-                //        {
-                //            message = "Fail to adjust invoice: " + Inv.No;
-                //            client.UploadFile(tempFile, ftpInfo.AdjustFailedPath + "/" + file.Name);
-                //            File.Delete(tempFile);
-                //            client.DeleteFile(file.FullName);
-                //            SendFailedMail(file.Name, Inv.No, result.errorCode, result.description, "", type);
-                //        }
-                //        log.Error(message);
-                //    }
-                //    else
-                //    {
-                //        WriteErrorResult(tempFile, mesError);
-                //        client.UploadFile(tempFile, ftpInfo.AdjustFailedPath + "/" + file.Name);
-                //        File.Delete(tempFile);
-                //        client.DeleteFile(file.FullName);
-                //        SendFailedMail(file.Name, Inv.No, "", "", mesError, type);
-                //        log.Error("Fail to adjust invoice: " + Inv.No + mesError);
-                //    }
-                //}
+                foreach (FtpListItem file in client.GetListing(ftpInfo.CancelXMLPath).OrderBy(c => c.Modified))
+                {
+                    if (file.Type != FtpFileSystemObjectType.File)
+                        continue;
+                    fileName = file.Name;
+                    fileFullName = file.FullName;
+                    type = 3;
+                    string message = "";
+                    string mesError = "";
+                    string tempFile = AppDomain.CurrentDomain.BaseDirectory + "Temp/temp.xml";
+                    filePath = tempFile;
+                    client.DownloadFile(tempFile, file.FullName);
+                    CancelModels model = ConvertToCancelModel(tempFile, ref mesError);
+                    orderNumber = model.additionalReferenceDesc;
 
-                //foreach (FtpListItem file in client.GetListing(ftpInfo.CancelXMLPath).OrderBy(c => c.Modified))
-                //{
-                //    if (file.Type != FtpFileSystemObjectType.File)
-                //        continue;
-                //    fileName = file.Name;
-                //    fileFullName = file.FullName;
-                //    type = 3;
-                //    string message = "";
-                //    string mesError = "";
-                //    string tempFile = AppDomain.CurrentDomain.BaseDirectory + "Temp/temp.xml";
-                //    filePath = tempFile;
-                //    client.DownloadFile(tempFile, file.FullName);
-                //    CancelModels model = ConvertToCancelModel(tempFile, ref mesError);
-                //    orderNumber = model.additionalReferenceDesc;
-
-                //    if (string.IsNullOrEmpty(mesError))
-                //    {
-                //        var result = CancelInvoice(apiInfo, model);
-                //        WriteCancelResult(tempFile, result);
-                //        if (string.IsNullOrEmpty(result.errorCode))
-                //        {
-                //            message = "Cancel invoice successfully: " + orderNumber;
-                //            client.UploadFile(tempFile, ftpInfo.CancelSuccessPath + "/" + file.Name);
-                //            File.Delete(tempFile);
-                //            client.DeleteFile(file.FullName);
-                //        }
-                //        else
-                //        {
-                //            message = "Fail to cancel invoice: " + orderNumber;
-                //            client.UploadFile(tempFile, ftpInfo.CancelFailedPath + "/" + file.Name);
-                //            File.Delete(tempFile);
-                //            client.DeleteFile(file.FullName);
-                //            SendFailedMail(file.Name, orderNumber, result.errorCode, result.description, "", type);
-                //        }
-                //        log.Error(message);
-                //    }
-                //    else
-                //    {
-                //        WriteErrorResult(tempFile, mesError);
-                //        client.UploadFile(tempFile, ftpInfo.CancelFailedPath + "/" + file.Name);
-                //        File.Delete(tempFile);
-                //        client.DeleteFile(file.FullName);
-                //        SendFailedMail(file.Name, orderNumber, "", "", mesError, type);
-                //        log.Error("Fail to cancel invoice: " + orderNumber + mesError);
-                //    }
-                //}
+                    if (string.IsNullOrEmpty(mesError))
+                    {
+                        var result = CancelInvoice(apiInfo, model);
+                        WriteCancelResult(tempFile, result);
+                        if (string.IsNullOrEmpty(result.errorCode))
+                        {
+                            message = "Cancel invoice successfully: " + orderNumber;
+                            client.UploadFile(tempFile, ftpInfo.CancelSuccessPath + "/" + file.Name);
+                            File.Delete(tempFile);
+                            client.DeleteFile(file.FullName);
+                        }
+                        else
+                        {
+                            message = "Fail to cancel invoice: " + orderNumber;
+                            //client.UploadFile(tempFile, ftpInfo.CancelFailedPath + "/" + file.Name);
+                            File.Delete(tempFile);
+                            //client.DeleteFile(file.FullName);
+                            SendFailedMail(file.Name, orderNumber, result.errorCode, result.description, "", type);
+                        }
+                        log.Error(message);
+                    }
+                    else
+                    {
+                        WriteErrorResult(tempFile, mesError);
+                        //client.UploadFile(tempFile, ftpInfo.CancelFailedPath + "/" + file.Name);
+                        File.Delete(tempFile);
+                        //client.DeleteFile(file.FullName);
+                        SendFailedMail(file.Name, orderNumber, "", "", mesError, type);
+                        log.Error("Fail to cancel invoice: " + orderNumber + mesError);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -298,12 +298,12 @@ namespace InvoiceService
                 if (ex.Message.StartsWith("ExceptionError: "))
                 {
                     WriteErrorResult(filePath, ex.Message);
-                    if (type == 1)
-                        client.UploadFile(filePath, ftpInfo.IssueFailedPath + "/" + fileName);
-                    else
-                        client.UploadFile(filePath, ftpInfo.CancelFailedPath + "/" + fileName);
+                    //if (type == 1)
+                    //    client.UploadFile(filePath, ftpInfo.IssueFailedPath + "/" + fileName);
+                    //else
+                    //    client.UploadFile(filePath, ftpInfo.CancelFailedPath + "/" + fileName);
                     File.Delete(filePath);
-                    client.DeleteFile(fileFullName);
+                    //client.DeleteFile(fileFullName);
                     SendFailedMail(fileName, orderNumber, "", "", ex.Message, type);
                 }
             }
@@ -370,7 +370,7 @@ namespace InvoiceService
                 }
                 //Fkey
                 if (!string.IsNullOrEmpty(inv.No))
-                    inv.Fkey = inv.ComTaxCode + "-" + inv.No;
+                    inv.Fkey = string.Format("{0}-{1}-{2}", inv.ComTaxCode, inv.No,DateTime.Now.ToString("ddMMyyyyhhmmss"));
 
                 //Parse thông tin khác
                 if (dSet.Tables.Contains("Order"))
