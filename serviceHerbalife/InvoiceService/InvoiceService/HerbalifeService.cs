@@ -55,39 +55,42 @@ namespace InvoiceService
             {
 #if DEBUG
                 #region test
-                string fileTest = @"E:\NTS_VNVGWH_VN03528026_1.xml";
+                string fileTest = @"D:\NTS_VNXSWH_VAS2198363_1.xml";
                 type = 1;
                 string messageTest = "";
                 string mesErrorTest = "";
-                InvoiceVAT InvTest;
+                List<InvoiceVAT> InvTest;
                 DataSet dSetTest = new DataSet();
                 dSetTest.ReadXml(fileTest);
                 InvTest = ConvertToInvoiceVAT(dSetTest, false, ref mesErrorTest);
-                orderNumber = InvTest.No;
+                orderNumber = InvTest.FirstOrDefault().No;
 
                 //Phát hành hóa đơn
                 if (string.IsNullOrEmpty(mesErrorTest))
                 {
-                    var InvApi = ConvertToAPIModel(InvTest, false);
-                    APIResult result = SendInvoice(apiInfo, InvApi, InvTest.ComTaxCode);
-                    WriteNewResult(fileTest, result, InvTest.ArisingDate, InvTest.Pattern, InvTest.Serial);
-                    if (string.IsNullOrEmpty(result.errorCode))
+                    foreach (var item in InvTest)
                     {
-                        messageTest = "Issue invoice successfully: " + InvTest.No;
+                        var InvApi = ConvertToAPIModel(item, false);
+                        APIResult result = SendInvoice(apiInfo, InvApi, item.ComTaxCode);
+                        WriteNewResult(fileTest, result, item.ArisingDate, item.Pattern, item.Serial);
+                        if (string.IsNullOrEmpty(result.errorCode))
+                        {
+                            messageTest = "Issue invoice successfully: " + item.No;
+                        }
+                        else
+                        {
+                            messageTest = "Fail to issue invoice: " + item.No;
+                        }
+                        log.Error(messageTest);
                     }
-                    else
-                    {
-                        messageTest = "Fail to issue invoice: " + InvTest.No;
-                    }
-                    log.Error(messageTest);
                 }
                 else
                 {
                     WriteErrorResult(fileTest, mesErrorTest);
-                    log.Error("Fail to issue invoice: " + InvTest.No + mesErrorTest);
+                    log.Error("Fail to issue invoice: " + InvTest.FirstOrDefault().No + mesErrorTest);
                 }
                 #endregion
-#endif
+#else
                 //Xử lý file trong folder
                 foreach (FtpListItem file in client.GetListing(ftpInfo.ReIssuePath).OrderBy(c => c.Modified))
                 {
@@ -291,6 +294,7 @@ namespace InvoiceService
                         log.Error("Fail to cancel invoice: " + orderNumber + mesError);
                     }
                 }
+#endif
             }
             catch (Exception ex)
             {
@@ -313,211 +317,437 @@ namespace InvoiceService
             }
         }
 
-        InvoiceVAT ConvertToInvoiceVAT(DataSet dSet, bool isResend, ref string mesError)
+        List<InvoiceVAT> ConvertToInvoiceVAT(DataSet dSet, bool isResend, ref string mesError)
         {
-            try
+            List<InvoiceVAT> lstinv = new List<InvoiceVAT>();
+            List<decimal> taxList = new List<decimal>();
+            int taxCount = dSet.Tables["Tax"].Rows.Count;
+            for (int i = 0; i < taxCount - 1; i++)
             {
-                InvoiceVAT inv = new InvoiceVAT();
-                ILog log = LogManager.GetLogger(typeof(HerbalifeService));
-
-                var mappingFile = Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]) + "\\Config\\warehouse.json";
-                var mappingData = File.ReadAllText(mappingFile);
-                var mapping = JsonConvert.DeserializeObject<Warehouse>(mappingData);
-
-                DateTime dateVal = DateTime.Now;
-                decimal dVal = 0;
-
-                //Parse thông tin chung hóa đơn
-                DataRow infoRow = dSet.Tables["General"].Rows[0];
-                inv.No = infoRow["OrderNumber"].ToString();
-                //inv.FacturaNumber = infoRow["Factura_number"].ToString();
-                inv.OrderMonth = infoRow["OrderMonth"].ToString();
-                if (DateTime.TryParseExact(infoRow["OrderDate"].ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateVal))
-                    inv.OrderDate = dateVal;
-                else
-                {
-                    mesError += " - error parse OrderDate";
-                }
-                if (DateTime.TryParseExact(infoRow["NTS_Date"].ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateVal))
-                    inv.ArisingDate = dateVal;
-                else
-                {
-                    mesError += " - error parse NTS_Date";
-                }
-
-                inv.OrderChannel = infoRow["OrderChannel"].ToString();
-                inv.OrderType = infoRow["OrderType"].ToString();
-
-                inv.Warehouse = infoRow["WarehouseNumber"].ToString();
-                var warehouse = mapping.WarehouseMapping.FirstOrDefault(c => c.Warehouse.Contains(inv.Warehouse));
-                if (warehouse != null)
-                {
-                    inv.ComTaxCode = warehouse.Taxcode;
-                    if (isResend)
-                    {
-                        inv.Pattern = warehouse.ResendPattern;
-                        inv.Serial = warehouse.ResendSerial;
-                    }
-                    else
-                    {
-                        inv.Pattern = warehouse.Pattern;
-                        inv.Serial = warehouse.Serial;
-                    }
-                }
-                else
-                {
-                    mesError += " - warehouse code invalid";
-                }
-                //Fkey
-                if (!string.IsNullOrEmpty(inv.No))
-                    inv.Fkey = string.Format("{0}-{1}-{2}", inv.ComTaxCode, inv.No,DateTime.Now.ToString("ddMMyyyyhhmmss"));
-
-                //Parse thông tin khác
-                if (dSet.Tables.Contains("Order"))
-                {
-                    DataRow orderRow = dSet.Tables["Order"].Rows[0];
-                    inv.VolumePoints = orderRow["VolumePoints"].ToString();
-                }
-
-                //Parse thông tin người mua
-                DataRow dsRow = dSet.Tables["DistributorDetails"].Rows[0];
-                DataRow buyerRow = dSet.Tables["BillTo"].Rows[0];
-                inv.CusCode = dsRow["DSID"].ToString();
-                inv.CusEmail = dsRow["Primary_EmailAddress"].ToString();
-                inv.Buyer = buyerRow["DSLastName"].ToString() + " " + buyerRow["DSFirstName"].ToString();
-                inv.CusAddress = buyerRow["Address1"].ToString() + " " + buyerRow["Address2"].ToString() + " " + buyerRow["Zipcode"].ToString() + " " + buyerRow["City"].ToString() + " " + buyerRow["Country"].ToString();
-
-                //Parse thông tin người bán
-                DataRow sellerRow = dSet.Tables["Lineage"].Rows[0];
-                inv.FQSID = sellerRow["FQSID"].ToString();
-                inv.FQSName = sellerRow["FQSName"].ToString();
-                inv.QSID = sellerRow["QSID"].ToString();
-                inv.QSName = sellerRow["QSName"].ToString();
-
-                //Parse thông tin thuế
-                DataRow taxRow = dSet.Tables["Tax"].Rows[0];
+                DataRow taxRow = dSet.Tables["Tax"].Rows[i];
                 var taxrate = taxRow["Tax_Rate"].ToString();
-                if (decimal.TryParse(taxrate, out dVal))
-                    inv.VATRate = dVal;
+                if (decimal.TryParse(taxrate, out decimal dVal))
+                    taxList.Add(dVal);
                 else
-                {
                     mesError += " - error parse Tax_Rate";
-                }
-
-                //Parse thông tin payment
-                List<string> lstpayment = new List<string>();
-                if (dSet.Tables.Contains("PaymentReference"))
-                {
-                    int paymentCount = dSet.Tables["PaymentReference"].Rows.Count;
-                    if (paymentCount <= 1)
-                        inv.PaymentMethod = dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString();
-                    else
-                    {
-                        for (int i = 0; i < paymentCount; i++)
-                            lstpayment.Add(dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString());
-                        inv.PaymentMethod = string.Join("+", lstpayment);
-                    }
-                }
-
-                //Parse thông tin vận chuyển
-                DataRow freightRow = dSet.Tables["OrderPricing"].Rows[0];
-                if (decimal.TryParse(freightRow["Total_Freight"].ToString(), out dVal))
-                    inv.Freight = Math.Abs(dVal);
-                if (decimal.TryParse(freightRow["Total_Tax_Freight"].ToString(), out dVal))
-                    inv.TaxFreight = Math.Abs(dVal);
-
-                //Parse thông tin hóa đơn điều chỉnh
-                if (dSet.Tables.Contains("InvoiceAdjustment"))
-                {
-                    DataRow oldInvRow = dSet.Tables["InvoiceAdjustment"].Rows[0];
-                    inv.OriginalInvoiceId = oldInvRow["TaxInvoiceNumber"].ToString();
-                    //Halt_esct chỉnh lại ngày phát hành hóa đơn điều chỉnh 14-05-2020 --BEGIN--
-                    if (DateTime.TryParseExact(infoRow["LocalPrintDate"].ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateVal))
-                    {
-                        inv.AdjustDate = dateVal;
-                        log.Info("NGày phát hành của hóa đơn điều chỉnh là :" + dateVal);
-                    }
-                    else
-                    {
-                        mesError += " - error parse LocalPrintDate";
-                    }
-                    //if (DateTime.TryParseExact(oldInvRow["OrderCancellationDate"].ToString(), "dd-MMM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateVal))
-                    //{
-                    //    inv.AdjustDate = dateVal;
-                    //}
-                    //else
-                    //{
-                    //    mesError += " - error parse OrderCancellationDate";
-                    //}
-                    //Halt_esct chỉnh lại ngày phát hành hóa đơn điều chỉnh 14-05-2020 --END--
-                }
-
-                //Parse thông tin sản phẩm
-                List<ProductInv> lstProduct = new List<ProductInv>();
-                DataTable itemTb = dSet.Tables["Item"];
-                List<ProductObj> lstObj = ConvertTableToListObj<ProductObj>(itemTb);
-                var lstItem = lstObj.Where(c => c.QtyOrdered != null).ToList();
-
-                inv.VATAmount = 0;
-                inv.Total = 0;
-                inv.Amount = 0;
-
-                foreach (var item in lstItem)
-                {
-                    ProductInv prod = new ProductInv();
-                    //Halt_esct 22-05-2020 Fix lấy mã sản phẩm --BEGIN--
-                    //prod.Code = item.StockingSKU;
-                    prod.Code = item.ProductCode;
-                    //Halt_esct 22-05-2020 Fix lấy mã sản phẩm --END--
-                    prod.Name = item.ItemDescription;
-                    prod.Type = item.ProductType;
-                    prod.Unit = item.UOM;
-                    if (decimal.TryParse(item.QtyOrdered, out dVal))
-                        prod.Quantity = Math.Abs(dVal);
-                    else
-                    {
-                        mesError += " - error parse item quantity";
-                    }
-                    if (decimal.TryParse(item.DiscountAmt, out dVal))
-                        prod.DiscountAmount = Math.Abs(dVal);
-                    else
-                    {
-                        mesError += " - error parse item discount";
-                    }
-                    if (decimal.TryParse(item.ExtendedPrice, out dVal))
-                        prod.Total = Math.Abs(dVal) - prod.DiscountAmount;
-                    else
-                    {
-                        mesError += " - error parse item amount";
-                    }
-                    if (prod.Quantity != 0)
-                        prod.Price = prod.Total / prod.Quantity;
-                    else
-                    {
-                        mesError += " - quantity = 0";
-                    }
-                    if (decimal.TryParse(item.TaxRate_1, out dVal))
-                        prod.VATRate = dVal;
-                    else
-                    {
-                        mesError += " - error parse item tax rate";
-                    }
-                    prod.VATAmount = Math.Round(prod.Total * prod.VATRate / 100, MidpointRounding.AwayFromZero);
-                    prod.Amount = prod.Total + prod.VATAmount;
-                    inv.Total += prod.Total;
-                    inv.Amount += prod.Amount;
-                    inv.VATAmount += prod.VATAmount;
-                    lstProduct.Add(prod);
-                }
-                inv.Products = lstProduct;
-                inv.Total = inv.Total + inv.Freight;
-                inv.VATAmount = inv.VATAmount + inv.TaxFreight;
-                inv.Amount = inv.Amount + inv.Freight + inv.TaxFreight;
-                return inv;
             }
-            catch (Exception ex)
+            if (taxList.Count > 1)
             {
-                throw new Exception("ExceptionError: " + ex.Message);
+                foreach (var tax in taxList)
+                {
+                    try
+                    {
+                        InvoiceVAT inv = new InvoiceVAT();
+                        ILog log = LogManager.GetLogger(typeof(HerbalifeService));
+
+                        var mappingFile = Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]) + "\\Config\\warehouse.json";
+                        var mappingData = File.ReadAllText(mappingFile);
+                        var mapping = JsonConvert.DeserializeObject<Warehouse>(mappingData);
+
+                        DateTime dateVal = DateTime.Now;
+                        decimal dVal = 0;
+
+                        //Parse thông tin chung hóa đơn
+                        DataRow infoRow = dSet.Tables["General"].Rows[0];
+                        inv.No = infoRow["OrderNumber"].ToString();
+                        //inv.FacturaNumber = infoRow["Factura_number"].ToString();
+                        inv.OrderMonth = infoRow["OrderMonth"].ToString();
+                        if (DateTime.TryParseExact(infoRow["OrderDate"].ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateVal))
+                            inv.OrderDate = dateVal;
+                        else
+                        {
+                            mesError += " - error parse OrderDate";
+                        }
+                        if (DateTime.TryParseExact(infoRow["NTS_Date"].ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateVal))
+                            inv.ArisingDate = dateVal;
+                        else
+                        {
+                            mesError += " - error parse NTS_Date";
+                        }
+
+                        inv.OrderChannel = infoRow["OrderChannel"].ToString();
+                        inv.OrderType = infoRow["OrderType"].ToString();
+
+                        inv.Warehouse = infoRow["WarehouseNumber"].ToString();
+                        var warehouse = mapping.WarehouseMapping.FirstOrDefault(c => c.Warehouse.Contains(inv.Warehouse));
+                        if (warehouse != null)
+                        {
+                            inv.ComTaxCode = warehouse.Taxcode;
+                            if (isResend)
+                            {
+                                inv.Pattern = warehouse.ResendPattern;
+                                inv.Serial = warehouse.ResendSerial;
+                            }
+                            else
+                            {
+                                inv.Pattern = warehouse.Pattern;
+                                inv.Serial = warehouse.Serial;
+                            }
+                        }
+                        else
+                        {
+                            mesError += " - warehouse code invalid";
+                        }
+                        //Fkey
+                        if (!string.IsNullOrEmpty(inv.No))
+                            inv.Fkey = string.Format("{0}-{1}-{2}", inv.ComTaxCode, inv.No, DateTime.Now.ToString("ddMMyyyyhhmmss"));
+
+                        //Parse thông tin khác
+                        if (dSet.Tables.Contains("Order"))
+                        {
+                            DataRow orderRow = dSet.Tables["Order"].Rows[0];
+                            inv.VolumePoints = orderRow["VolumePoints"].ToString();
+                        }
+
+                        //Parse thông tin người mua
+                        DataRow dsRow = dSet.Tables["DistributorDetails"].Rows[0];
+                        DataRow buyerRow = dSet.Tables["BillTo"].Rows[0];
+                        inv.CusCode = dsRow["DSID"].ToString();
+                        inv.CusEmail = dsRow["Primary_EmailAddress"].ToString();
+                        inv.Buyer = buyerRow["DSLastName"].ToString() + " " + buyerRow["DSFirstName"].ToString();
+                        inv.CusAddress = buyerRow["Address1"].ToString() + " " + buyerRow["Address2"].ToString() + " " + buyerRow["Zipcode"].ToString() + " " + buyerRow["City"].ToString() + " " + buyerRow["Country"].ToString();
+
+                        //Parse thông tin người bán
+                        DataRow sellerRow = dSet.Tables["Lineage"].Rows[0];
+                        inv.FQSID = sellerRow["FQSID"].ToString();
+                        inv.FQSName = sellerRow["FQSName"].ToString();
+                        inv.QSID = sellerRow["QSID"].ToString();
+                        inv.QSName = sellerRow["QSName"].ToString();
+
+                        //Parse thông tin thuế
+                        //DataRow taxRow = dSet.Tables["Tax"].Rows[0];
+                        //var taxrate = taxRow["Tax_Rate"].ToString();
+                        //if (decimal.TryParse(taxrate, out dVal))
+                        inv.VATRate = tax;
+                        //else
+                        //{
+                        //    mesError += " - error parse Tax_Rate";
+                        //}
+
+                        //Parse thông tin payment
+                        List<string> lstpayment = new List<string>();
+                        if (dSet.Tables.Contains("PaymentReference"))
+                        {
+                            int paymentCount = dSet.Tables["PaymentReference"].Rows.Count;
+                            if (paymentCount <= 1)
+                                inv.PaymentMethod = dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString();
+                            else
+                            {
+                                for (int i = 0; i < paymentCount; i++)
+                                    lstpayment.Add(dSet.Tables["PaymentReference"].Rows[i]["PaymentType"].ToString());
+                                inv.PaymentMethod = string.Join("+", lstpayment);
+                            }
+                        }
+
+                        //Parse thông tin vận chuyển
+                        DataRow freightRow = dSet.Tables["Tax"].Rows[taxList.IndexOf(tax)];
+                        if (decimal.TryParse(freightRow["Total_Freight"].ToString(), out dVal))
+                            inv.Freight = Math.Abs(dVal);
+                        inv.TaxFreight = Math.Round(inv.Freight * 8 / 100, MidpointRounding.AwayFromZero);
+
+                        //Parse thông tin hóa đơn điều chỉnh
+                        if (dSet.Tables.Contains("InvoiceAdjustment"))
+                        {
+                            DataRow oldInvRow = dSet.Tables["InvoiceAdjustment"].Rows[0];
+                            inv.OriginalInvoiceId = oldInvRow["TaxInvoiceNumber"].ToString();
+                            //Halt_esct chỉnh lại ngày phát hành hóa đơn điều chỉnh 14-05-2020 --BEGIN--
+                            if (DateTime.TryParseExact(infoRow["LocalPrintDate"].ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateVal))
+                            {
+                                inv.AdjustDate = dateVal;
+                                log.Info("NGày phát hành của hóa đơn điều chỉnh là :" + dateVal);
+                            }
+                            else
+                            {
+                                mesError += " - error parse LocalPrintDate";
+                            }
+                            //if (DateTime.TryParseExact(oldInvRow["OrderCancellationDate"].ToString(), "dd-MMM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateVal))
+                            //{
+                            //    inv.AdjustDate = dateVal;
+                            //}
+                            //else
+                            //{
+                            //    mesError += " - error parse OrderCancellationDate";
+                            //}
+                            //Halt_esct chỉnh lại ngày phát hành hóa đơn điều chỉnh 14-05-2020 --END--
+                        }
+
+                        //Parse thông tin sản phẩm
+                        List<ProductInv> lstProduct = new List<ProductInv>();
+                        DataTable itemTb = dSet.Tables["Item"];
+                        List<ProductObj> lstObj = ConvertTableToListObj<ProductObj>(itemTb);
+                        var lstItem = lstObj.Where(c => c.QtyOrdered != null).ToList();
+
+                        inv.VATAmount = 0;
+                        inv.Total = 0;
+                        inv.Amount = 0;
+
+                        foreach (var item in lstItem.Where(x => x.TaxRate_1 == tax.ToString()).ToList())
+                        {
+                            ProductInv prod = new ProductInv();
+                            //Halt_esct 22-05-2020 Fix lấy mã sản phẩm --BEGIN--
+                            //prod.Code = item.StockingSKU;
+                            prod.Code = item.ProductCode;
+                            //Halt_esct 22-05-2020 Fix lấy mã sản phẩm --END--
+                            prod.Name = item.ItemDescription;
+                            prod.Type = item.ProductType;
+                            prod.Unit = item.UOM;
+                            if (decimal.TryParse(item.QtyOrdered, out dVal))
+                                prod.Quantity = Math.Abs(dVal);
+                            else
+                            {
+                                mesError += " - error parse item quantity";
+                            }
+                            if (decimal.TryParse(item.DiscountAmt, out dVal))
+                                prod.DiscountAmount = Math.Abs(dVal);
+                            else
+                            {
+                                mesError += " - error parse item discount";
+                            }
+                            if (decimal.TryParse(item.ExtendedPrice, out dVal))
+                                prod.Total = Math.Abs(dVal) - prod.DiscountAmount;
+                            else
+                            {
+                                mesError += " - error parse item amount";
+                            }
+                            if (prod.Quantity != 0)
+                                prod.Price = prod.Total / prod.Quantity;
+                            else
+                            {
+                                mesError += " - quantity = 0";
+                            }
+                            if (decimal.TryParse(item.TaxRate_1, out dVal))
+                                prod.VATRate = dVal;
+                            else
+                            {
+                                mesError += " - error parse item tax rate";
+                            }
+                            prod.VATAmount = Math.Round(prod.Total * prod.VATRate / 100, MidpointRounding.AwayFromZero);
+                            prod.Amount = prod.Total + prod.VATAmount;
+                            inv.Total += prod.Total;
+                            inv.Amount += prod.Amount;
+                            inv.VATAmount += prod.VATAmount;
+                            lstProduct.Add(prod);
+                        }
+                        inv.Products = lstProduct;
+                        inv.Total = inv.Total + inv.Freight;
+                        inv.VATAmount = inv.VATAmount + inv.TaxFreight;
+                        inv.Amount = inv.Amount + inv.Freight + inv.TaxFreight;
+                        lstinv.Add(inv);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception("ExceptionError: " + ex.Message);
+                    }
+                }
+                return lstinv;
+            }
+            else
+            {
+                try
+                {
+                    InvoiceVAT inv = new InvoiceVAT();
+                    ILog log = LogManager.GetLogger(typeof(HerbalifeService));
+
+                    var mappingFile = Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]) + "\\Config\\warehouse.json";
+                    var mappingData = File.ReadAllText(mappingFile);
+                    var mapping = JsonConvert.DeserializeObject<Warehouse>(mappingData);
+
+                    DateTime dateVal = DateTime.Now;
+                    decimal dVal = 0;
+
+                    //Parse thông tin chung hóa đơn
+                    DataRow infoRow = dSet.Tables["General"].Rows[0];
+                    inv.No = infoRow["OrderNumber"].ToString();
+                    //inv.FacturaNumber = infoRow["Factura_number"].ToString();
+                    inv.OrderMonth = infoRow["OrderMonth"].ToString();
+                    if (DateTime.TryParseExact(infoRow["OrderDate"].ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateVal))
+                        inv.OrderDate = dateVal;
+                    else
+                    {
+                        mesError += " - error parse OrderDate";
+                    }
+                    if (DateTime.TryParseExact(infoRow["NTS_Date"].ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateVal))
+                        inv.ArisingDate = dateVal;
+                    else
+                    {
+                        mesError += " - error parse NTS_Date";
+                    }
+
+                    inv.OrderChannel = infoRow["OrderChannel"].ToString();
+                    inv.OrderType = infoRow["OrderType"].ToString();
+
+                    inv.Warehouse = infoRow["WarehouseNumber"].ToString();
+                    var warehouse = mapping.WarehouseMapping.FirstOrDefault(c => c.Warehouse.Contains(inv.Warehouse));
+                    if (warehouse != null)
+                    {
+                        inv.ComTaxCode = warehouse.Taxcode;
+                        if (isResend)
+                        {
+                            inv.Pattern = warehouse.ResendPattern;
+                            inv.Serial = warehouse.ResendSerial;
+                        }
+                        else
+                        {
+                            inv.Pattern = warehouse.Pattern;
+                            inv.Serial = warehouse.Serial;
+                        }
+                    }
+                    else
+                    {
+                        mesError += " - warehouse code invalid";
+                    }
+                    //Fkey
+                    if (!string.IsNullOrEmpty(inv.No))
+                        inv.Fkey = string.Format("{0}-{1}-{2}", inv.ComTaxCode, inv.No, DateTime.Now.ToString("ddMMyyyyhhmmss"));
+
+                    //Parse thông tin khác
+                    if (dSet.Tables.Contains("Order"))
+                    {
+                        DataRow orderRow = dSet.Tables["Order"].Rows[0];
+                        inv.VolumePoints = orderRow["VolumePoints"].ToString();
+                    }
+
+                    //Parse thông tin người mua
+                    DataRow dsRow = dSet.Tables["DistributorDetails"].Rows[0];
+                    DataRow buyerRow = dSet.Tables["BillTo"].Rows[0];
+                    inv.CusCode = dsRow["DSID"].ToString();
+                    inv.CusEmail = dsRow["Primary_EmailAddress"].ToString();
+                    inv.Buyer = buyerRow["DSLastName"].ToString() + " " + buyerRow["DSFirstName"].ToString();
+                    inv.CusAddress = buyerRow["Address1"].ToString() + " " + buyerRow["Address2"].ToString() + " " + buyerRow["Zipcode"].ToString() + " " + buyerRow["City"].ToString() + " " + buyerRow["Country"].ToString();
+
+                    //Parse thông tin người bán
+                    DataRow sellerRow = dSet.Tables["Lineage"].Rows[0];
+                    inv.FQSID = sellerRow["FQSID"].ToString();
+                    inv.FQSName = sellerRow["FQSName"].ToString();
+                    inv.QSID = sellerRow["QSID"].ToString();
+                    inv.QSName = sellerRow["QSName"].ToString();
+
+                    //Parse thông tin thuế
+                    DataRow taxRow = dSet.Tables["Tax"].Rows[0];
+                    var taxrate = taxRow["Tax_Rate"].ToString();
+                    if (decimal.TryParse(taxrate, out dVal))
+                        inv.VATRate = dVal;
+                    else
+                    {
+                        mesError += " - error parse Tax_Rate";
+                    }
+
+                    //Parse thông tin payment
+                    List<string> lstpayment = new List<string>();
+                    if (dSet.Tables.Contains("PaymentReference"))
+                    {
+                        int paymentCount = dSet.Tables["PaymentReference"].Rows.Count;
+                        if (paymentCount <= 1)
+                            inv.PaymentMethod = dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString();
+                        else
+                        {
+                            for (int i = 0; i < paymentCount; i++)
+                                lstpayment.Add(dSet.Tables["PaymentReference"].Rows[i]["PaymentType"].ToString());
+                            inv.PaymentMethod = string.Join("+", lstpayment);
+                        }
+                    }
+
+                    //Parse thông tin vận chuyển
+                    DataRow freightRow = dSet.Tables["OrderPricing"].Rows[0];
+                    if (decimal.TryParse(freightRow["Total_Freight"].ToString(), out dVal))
+                        inv.Freight = Math.Abs(dVal);
+                    if (decimal.TryParse(freightRow["Total_Tax_Freight"].ToString(), out dVal))
+                        inv.TaxFreight = Math.Abs(dVal);
+
+                    //Parse thông tin hóa đơn điều chỉnh
+                    if (dSet.Tables.Contains("InvoiceAdjustment"))
+                    {
+                        DataRow oldInvRow = dSet.Tables["InvoiceAdjustment"].Rows[0];
+                        inv.OriginalInvoiceId = oldInvRow["TaxInvoiceNumber"].ToString();
+                        //Halt_esct chỉnh lại ngày phát hành hóa đơn điều chỉnh 14-05-2020 --BEGIN--
+                        if (DateTime.TryParseExact(infoRow["LocalPrintDate"].ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateVal))
+                        {
+                            inv.AdjustDate = dateVal;
+                            log.Info("NGày phát hành của hóa đơn điều chỉnh là :" + dateVal);
+                        }
+                        else
+                        {
+                            mesError += " - error parse LocalPrintDate";
+                        }
+                        //if (DateTime.TryParseExact(oldInvRow["OrderCancellationDate"].ToString(), "dd-MMM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateVal))
+                        //{
+                        //    inv.AdjustDate = dateVal;
+                        //}
+                        //else
+                        //{
+                        //    mesError += " - error parse OrderCancellationDate";
+                        //}
+                        //Halt_esct chỉnh lại ngày phát hành hóa đơn điều chỉnh 14-05-2020 --END--
+                    }
+
+                    //Parse thông tin sản phẩm
+                    List<ProductInv> lstProduct = new List<ProductInv>();
+                    DataTable itemTb = dSet.Tables["Item"];
+                    List<ProductObj> lstObj = ConvertTableToListObj<ProductObj>(itemTb);
+                    var lstItem = lstObj.Where(c => c.QtyOrdered != null).ToList();
+
+                    inv.VATAmount = 0;
+                    inv.Total = 0;
+                    inv.Amount = 0;
+
+                    foreach (var item in lstItem)
+                    {
+                        ProductInv prod = new ProductInv();
+                        //Halt_esct 22-05-2020 Fix lấy mã sản phẩm --BEGIN--
+                        //prod.Code = item.StockingSKU;
+                        prod.Code = item.ProductCode;
+                        //Halt_esct 22-05-2020 Fix lấy mã sản phẩm --END--
+                        prod.Name = item.ItemDescription;
+                        prod.Type = item.ProductType;
+                        prod.Unit = item.UOM;
+                        if (decimal.TryParse(item.QtyOrdered, out dVal))
+                            prod.Quantity = Math.Abs(dVal);
+                        else
+                        {
+                            mesError += " - error parse item quantity";
+                        }
+                        if (decimal.TryParse(item.DiscountAmt, out dVal))
+                            prod.DiscountAmount = Math.Abs(dVal);
+                        else
+                        {
+                            mesError += " - error parse item discount";
+                        }
+                        if (decimal.TryParse(item.ExtendedPrice, out dVal))
+                            prod.Total = Math.Abs(dVal) - prod.DiscountAmount;
+                        else
+                        {
+                            mesError += " - error parse item amount";
+                        }
+                        if (prod.Quantity != 0)
+                            prod.Price = prod.Total / prod.Quantity;
+                        else
+                        {
+                            mesError += " - quantity = 0";
+                        }
+                        if (decimal.TryParse(item.TaxRate_1, out dVal))
+                            prod.VATRate = dVal;
+                        else
+                        {
+                            mesError += " - error parse item tax rate";
+                        }
+                        prod.VATAmount = Math.Round(prod.Total * prod.VATRate / 100, MidpointRounding.AwayFromZero);
+                        prod.Amount = prod.Total + prod.VATAmount;
+                        inv.Total += prod.Total;
+                        inv.Amount += prod.Amount;
+                        inv.VATAmount += prod.VATAmount;
+                        lstProduct.Add(prod);
+                    }
+                    inv.Products = lstProduct;
+                    inv.Total = inv.Total + inv.Freight;
+                    inv.VATAmount = inv.VATAmount + inv.TaxFreight;
+                    inv.Amount = inv.Amount + inv.Freight + inv.TaxFreight;
+                    lstinv.Add(inv);
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception("ExceptionError: " + ex.Message);
+                }
+                return lstinv;
             }
         }
 
@@ -710,7 +940,7 @@ namespace InvoiceService
         {
             InvoiceInfo objInvoice = new InvoiceInfo();
             objInvoice.transactionUuid = invoice.Fkey;
-            objInvoice.invoiceType = !string.IsNullOrEmpty(invoice.Pattern) ? invoice.Pattern.Substring(0, 6) : "";// "01GTKT";
+            objInvoice.invoiceType = !string.IsNullOrEmpty(invoice.Pattern) ? invoice.Pattern.Substring(0, 1) : "";// "01GTKT";
             objInvoice.templateCode = !string.IsNullOrEmpty(invoice.Pattern) ? invoice.Pattern : "";
             objInvoice.invoiceSeries = !string.IsNullOrEmpty(invoice.Serial) ? invoice.Serial : ""; //ko nhập lấy mặc định
 
