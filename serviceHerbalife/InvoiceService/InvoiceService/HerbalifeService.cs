@@ -390,7 +390,7 @@ namespace InvoiceService
                         }
                         //Fkey
                         if (!string.IsNullOrEmpty(inv.No))
-                            inv.Fkey = string.Format("{0}-{1}-{2}", inv.ComTaxCode, inv.No, DateTime.Now.ToString("ddMMyyyyhhmmss"));
+                            inv.Fkey = string.Format("{0}{1}{2}", inv.ComTaxCode, inv.No, tax.ToString("0"));
 
                         //Parse thông tin khác
                         if (dSet.Tables.Contains("Order"))
@@ -443,7 +443,7 @@ namespace InvoiceService
                         DataRow freightRow = dSet.Tables["Tax"].Rows[taxList.IndexOf(tax)];
                         if (decimal.TryParse(freightRow["Total_Freight"].ToString(), out dVal))
                             inv.Freight = Math.Abs(dVal);
-                        inv.TaxFreight = Math.Round(inv.Freight * 8 / 100, MidpointRounding.AwayFromZero);
+                        inv.TaxFreight = Math.Round(inv.Freight * tax / 100, MidpointRounding.AwayFromZero);
 
                         //Parse thông tin hóa đơn điều chỉnh
                         if (dSet.Tables.Contains("InvoiceAdjustment"))
@@ -578,6 +578,7 @@ namespace InvoiceService
 
                     inv.Warehouse = infoRow["WarehouseNumber"].ToString();
                     var warehouse = mapping.WarehouseMapping.FirstOrDefault(c => c.Warehouse.Contains(inv.Warehouse));
+                    inv.TT78 = warehouse.TT78;
                     if (warehouse != null)
                     {
                         inv.ComTaxCode = warehouse.Taxcode;
@@ -940,9 +941,18 @@ namespace InvoiceService
         {
             InvoiceInfo objInvoice = new InvoiceInfo();
             objInvoice.transactionUuid = invoice.Fkey;
-            objInvoice.invoiceType = !string.IsNullOrEmpty(invoice.Pattern) ? invoice.Pattern.Substring(0, 1) : "";// "01GTKT";
-            objInvoice.templateCode = !string.IsNullOrEmpty(invoice.Pattern) ? invoice.Pattern : "";
-            objInvoice.invoiceSeries = !string.IsNullOrEmpty(invoice.Serial) ? invoice.Serial : ""; //ko nhập lấy mặc định
+            if (invoice.TT78 == 0)
+            {
+                objInvoice.invoiceType = !string.IsNullOrEmpty(invoice.Pattern) ? invoice.Pattern.Substring(0, 6) : "";// "01GTKT";
+                objInvoice.templateCode = !string.IsNullOrEmpty(invoice.Pattern) ? invoice.Pattern : "";
+                objInvoice.invoiceSeries = !string.IsNullOrEmpty(invoice.Serial) ? invoice.Serial : ""; //ko nhập lấy mặc định
+            }
+            else
+            {
+                objInvoice.invoiceType = !string.IsNullOrEmpty(invoice.Pattern) ? invoice.Pattern.Substring(0, 1) : "";// "1";
+                objInvoice.templateCode = !string.IsNullOrEmpty(invoice.Pattern) ? invoice.Pattern : "";
+                objInvoice.invoiceSeries = !string.IsNullOrEmpty(invoice.Serial) ? invoice.Serial : ""; //ko nhập lấy mặc định
+            }
 
             //Ngày hóa đơn
             DateTimeOffset arisingDate = new DateTimeOffset(invoice.ArisingDate, new TimeSpan(+7, 0, 0));

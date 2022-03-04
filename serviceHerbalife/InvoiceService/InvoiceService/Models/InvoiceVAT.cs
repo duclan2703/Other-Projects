@@ -64,5 +64,6 @@ namespace InvoiceService.Models
         public virtual decimal TaxFreight { get; set; }
         public virtual string OriginalInvoiceId { get; set; }
         public virtual DateTime AdjustDate { get; set; }
+        public virtual int TT78 { get; set; }
     }
 }

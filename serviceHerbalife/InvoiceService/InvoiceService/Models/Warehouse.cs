@@ -19,5 +19,6 @@ namespace InvoiceService.Models
         public string Serial { get; set; }
         public string ResendPattern { get; set; }
         public string ResendSerial { get; set; }
+        public int TT78 { get; set; }
     }
 }
