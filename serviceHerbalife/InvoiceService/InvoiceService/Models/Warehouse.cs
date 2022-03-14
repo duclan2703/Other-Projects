@@ -20,5 +20,6 @@ namespace InvoiceService.Models
         public string ResendPattern { get; set; }
         public string ResendSerial { get; set; }
         public int TT78 { get; set; }
+        public decimal TaxFreight { get; set; }
     }
 }

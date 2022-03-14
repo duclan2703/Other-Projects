@@ -7,7 +7,8 @@
       "Serial": "AA/19E",
       "ResendPattern": "01GTKT0/001",
       "ResendSerial": "AB/19E",
-      "TT78": 0
+      "TT78": 0,
+      "TaxFreight": 8
     },
     {
       "Warehouse": [ "VF", "VD" ],
@@ -16,7 +17,8 @@
       "Serial": "AC/19E",
       "ResendPattern": "01GTKT0/001",
       "ResendSerial": "AD/19E",
-      "TT78": 0
+      "TT78": 0,
+      "TaxFreight": 8
     }
   ]
 }

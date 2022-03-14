@@ -22,6 +22,10 @@ namespace InvoiceService
 {
     public class HerbalifeService
     {
+        static string mappingFile = Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]) + "\\Config\\warehouse.json";
+        static string mappingData = File.ReadAllText(mappingFile);
+        static Warehouse mapping = JsonConvert.DeserializeObject<Warehouse>(mappingData);
+
         public void Processing()
         {
             ILog log = LogManager.GetLogger(typeof(HerbalifeService));
@@ -55,7 +59,7 @@ namespace InvoiceService
             {
 #if DEBUG
                 #region test
-                string fileTest = @"D:\NTS_VNXSWH_VAS2198363_1.xml";
+                string fileTest = @"D:\Herbalife\NTS_VNXSWH_VAS2198276_1.xml";
                 type = 1;
                 string messageTest = "";
                 string mesErrorTest = "";
@@ -104,34 +108,37 @@ namespace InvoiceService
                     string tempFile = AppDomain.CurrentDomain.BaseDirectory + "Temp/temp.xml";
                     filePath = tempFile;
                     client.DownloadFile(tempFile, file.FullName);
-                    InvoiceVAT Inv;
+                    List<InvoiceVAT> lstInv;
                     DataSet dSet = new DataSet();
                     dSet.ReadXml(tempFile);
-                    Inv = ConvertToInvoiceVAT(dSet, true, ref mesError);
-                    orderNumber = Inv.No;
+                    lstInv = ConvertToInvoiceVAT(dSet, true, ref mesError);
+                    orderNumber = lstInv.FirstOrDefault().No;
 
                     //Phát hành hóa đơn
                     if (string.IsNullOrEmpty(mesError))
                     {
-                        var InvApi = ConvertToAPIModel(Inv, false);
-                        APIResult result = SendInvoice(apiInfo, InvApi, Inv.ComTaxCode);
-                        WriteNewResult(tempFile, result, Inv.ArisingDate, Inv.Pattern, Inv.Serial);
-                        if (string.IsNullOrEmpty(result.errorCode))
+                        foreach (var Inv in lstInv)
                         {
-                            message = "Issue invoice successfully: " + Inv.No;
-                            client.UploadFile(tempFile, ftpInfo.IssueSuccessPath + "/" + file.Name);
-                            File.Delete(tempFile);
-                            client.DeleteFile(file.FullName);
+                            var InvApi = ConvertToAPIModel(Inv, false);
+                            APIResult result = SendInvoice(apiInfo, InvApi, Inv.ComTaxCode);
+                            WriteNewResult(tempFile, result, Inv.ArisingDate, Inv.Pattern, Inv.Serial);
+                            if (string.IsNullOrEmpty(result.errorCode))
+                            {
+                                message = "Issue invoice successfully: " + Inv.No;
+                                client.UploadFile(tempFile, ftpInfo.IssueSuccessPath + "/" + file.Name);
+                                File.Delete(tempFile);
+                                client.DeleteFile(file.FullName);
+                            }
+                            else
+                            {
+                                message = "Fail to issue invoice: " + Inv.No;
+                                //client.UploadFile(tempFile, ftpInfo.IssueFailedPath + "/" + file.Name);
+                                File.Delete(tempFile);
+                                //client.DeleteFile(file.FullName);
+                                SendFailedMail(file.Name, Inv.No, result.errorCode, result.description, "", type);
+                            }
+                            log.Error(message);
                         }
-                        else
-                        {
-                            message = "Fail to issue invoice: " + Inv.No;
-                            //client.UploadFile(tempFile, ftpInfo.IssueFailedPath + "/" + file.Name);
-                            File.Delete(tempFile);
-                            //client.DeleteFile(file.FullName);
-                            SendFailedMail(file.Name, Inv.No, result.errorCode, result.description, "", type);
-                        }
-                        log.Error(message);
                     }
                     else
                     {
@@ -139,8 +146,8 @@ namespace InvoiceService
                         //client.UploadFile(tempFile, ftpInfo.IssueFailedPath + "/" + file.Name);
                         File.Delete(tempFile);
                         //client.DeleteFile(file.FullName);
-                        SendFailedMail(file.Name, Inv.No, "", "", mesError, type);
-                        log.Error("Fail to issue invoice: " + Inv.No + mesError);
+                        SendFailedMail(file.Name, lstInv.FirstOrDefault().No, "", "", mesError, type);
+                        log.Error("Fail to issue invoice: " + lstInv.FirstOrDefault().No + mesError);
                     }
                 }
 
@@ -156,34 +163,37 @@ namespace InvoiceService
                     string tempFile = AppDomain.CurrentDomain.BaseDirectory + "Temp/temp.xml";
                     filePath = tempFile;
                     client.DownloadFile(tempFile, file.FullName);
-                    InvoiceVAT Inv;
+                    List<InvoiceVAT> lstInv;
                     DataSet dSet = new DataSet();
                     dSet.ReadXml(tempFile);
-                    Inv = ConvertToInvoiceVAT(dSet, false, ref mesError);
-                    orderNumber = Inv.No;
+                    lstInv = ConvertToInvoiceVAT(dSet, false, ref mesError);
+                    orderNumber = lstInv.FirstOrDefault().No;
 
                     //Phát hành hóa đơn
                     if (string.IsNullOrEmpty(mesError))
                     {
-                        var InvApi = ConvertToAPIModel(Inv, false);
-                        APIResult result = SendInvoice(apiInfo, InvApi, Inv.ComTaxCode);
-                        WriteNewResult(tempFile, result, Inv.ArisingDate, Inv.Pattern, Inv.Serial);
-                        if (string.IsNullOrEmpty(result.errorCode))
+                        foreach (var Inv in lstInv)
                         {
-                            message = "Issue invoice successfully: " + Inv.No;
-                            client.UploadFile(tempFile, ftpInfo.IssueSuccessPath + "/" + file.Name);
-                            File.Delete(tempFile);
-                            client.DeleteFile(file.FullName);
+                            var InvApi = ConvertToAPIModel(Inv, false);
+                            APIResult result = SendInvoice(apiInfo, InvApi, Inv.ComTaxCode);
+                            WriteNewResult(tempFile, result, Inv.ArisingDate, Inv.Pattern, Inv.Serial);
+                            if (string.IsNullOrEmpty(result.errorCode))
+                            {
+                                message = "Issue invoice successfully: " + Inv.No;
+                                client.UploadFile(tempFile, ftpInfo.IssueSuccessPath + "/" + file.Name);
+                                File.Delete(tempFile);
+                                client.DeleteFile(file.FullName);
+                            }
+                            else
+                            {
+                                message = "Fail to issue invoice: " + Inv.No;
+                                //client.UploadFile(tempFile, ftpInfo.IssueFailedPath + "/" + file.Name);
+                                File.Delete(tempFile);
+                                //client.DeleteFile(file.FullName);
+                                SendFailedMail(file.Name, Inv.No, result.errorCode, result.description, "", type);
+                            }
+                            log.Error(message);
                         }
-                        else
-                        {
-                            message = "Fail to issue invoice: " + Inv.No;
-                            //client.UploadFile(tempFile, ftpInfo.IssueFailedPath + "/" + file.Name);
-                            File.Delete(tempFile);
-                            //client.DeleteFile(file.FullName);
-                            SendFailedMail(file.Name, Inv.No, result.errorCode, result.description, "", type);
-                        }
-                        log.Error(message);
                     }
                     else
                     {
@@ -191,8 +201,8 @@ namespace InvoiceService
                         //client.UploadFile(tempFile, ftpInfo.IssueFailedPath + "/" + file.Name);
                         File.Delete(tempFile);
                         //client.DeleteFile(file.FullName);
-                        SendFailedMail(file.Name, Inv.No, "", "", mesError, type);
-                        log.Error("Fail to issue invoice: " + Inv.No + mesError);
+                        SendFailedMail(file.Name, lstInv.FirstOrDefault().No, "", "", mesError, type);
+                        log.Error("Fail to issue invoice: " + lstInv.FirstOrDefault().No + mesError);
                     }
                 }
 
@@ -208,34 +218,37 @@ namespace InvoiceService
                     string tempFile = AppDomain.CurrentDomain.BaseDirectory + "Temp/temp.xml";
                     filePath = tempFile;
                     client.DownloadFile(tempFile, file.FullName);
-                    InvoiceVAT Inv;
+                    List<InvoiceVAT> lstInv;
                     DataSet dSet = new DataSet();
                     dSet.ReadXml(tempFile);
-                    Inv = ConvertToInvoiceVAT(dSet, false, ref mesError);
-                    orderNumber = Inv.No;
+                    lstInv = ConvertToInvoiceVAT(dSet, false, ref mesError);
+                    orderNumber = lstInv.FirstOrDefault().No;
 
                     //Phát hành hóa đơn
                     if (string.IsNullOrEmpty(mesError))
                     {
-                        var InvApi = ConvertToAPIModel(Inv, true);
-                        APIResult result = SendInvoice(apiInfo, InvApi, Inv.ComTaxCode);
-                        WriteNewResult(tempFile, result, Inv.ArisingDate, Inv.Pattern, Inv.Serial);
-                        if (string.IsNullOrEmpty(result.errorCode))
+                        foreach (var Inv in lstInv)
                         {
-                            message = "Adjust invoice successfully: " + Inv.No;
-                            client.UploadFile(tempFile, ftpInfo.AdjustSuccessPath + "/" + file.Name);
-                            File.Delete(tempFile);
-                            client.DeleteFile(file.FullName);
+                            var InvApi = ConvertToAPIModel(Inv, true);
+                            APIResult result = SendInvoice(apiInfo, InvApi, Inv.ComTaxCode);
+                            WriteNewResult(tempFile, result, Inv.ArisingDate, Inv.Pattern, Inv.Serial);
+                            if (string.IsNullOrEmpty(result.errorCode))
+                            {
+                                message = "Adjust invoice successfully: " + Inv.No;
+                                client.UploadFile(tempFile, ftpInfo.AdjustSuccessPath + "/" + file.Name);
+                                File.Delete(tempFile);
+                                client.DeleteFile(file.FullName);
+                            }
+                            else
+                            {
+                                message = "Fail to adjust invoice: " + Inv.No;
+                                //client.UploadFile(tempFile, ftpInfo.AdjustFailedPath + "/" + file.Name);
+                                File.Delete(tempFile);
+                                //client.DeleteFile(file.FullName);
+                                SendFailedMail(file.Name, Inv.No, result.errorCode, result.description, "", type);
+                            }
+                            log.Error(message);
                         }
-                        else
-                        {
-                            message = "Fail to adjust invoice: " + Inv.No;
-                            //client.UploadFile(tempFile, ftpInfo.AdjustFailedPath + "/" + file.Name);
-                            File.Delete(tempFile);
-                            //client.DeleteFile(file.FullName);
-                            SendFailedMail(file.Name, Inv.No, result.errorCode, result.description, "", type);
-                        }
-                        log.Error(message);
                     }
                     else
                     {
@@ -243,8 +256,8 @@ namespace InvoiceService
                         //client.UploadFile(tempFile, ftpInfo.AdjustFailedPath + "/" + file.Name);
                         File.Delete(tempFile);
                         //client.DeleteFile(file.FullName);
-                        SendFailedMail(file.Name, Inv.No, "", "", mesError, type);
-                        log.Error("Fail to adjust invoice: " + Inv.No + mesError);
+                        SendFailedMail(file.Name, lstInv.FirstOrDefault().No, "", "", mesError, type);
+                        log.Error("Fail to adjust invoice: " + lstInv.FirstOrDefault().No + mesError);
                     }
                 }
 
@@ -322,7 +335,7 @@ namespace InvoiceService
             List<InvoiceVAT> lstinv = new List<InvoiceVAT>();
             List<decimal> taxList = new List<decimal>();
             int taxCount = dSet.Tables["Tax"].Rows.Count;
-            for (int i = 0; i < taxCount - 1; i++)
+            for (int i = 0; i < taxCount; i++)
             {
                 DataRow taxRow = dSet.Tables["Tax"].Rows[i];
                 var taxrate = taxRow["Tax_Rate"].ToString();
@@ -339,10 +352,6 @@ namespace InvoiceService
                     {
                         InvoiceVAT inv = new InvoiceVAT();
                         ILog log = LogManager.GetLogger(typeof(HerbalifeService));
-
-                        var mappingFile = Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]) + "\\Config\\warehouse.json";
-                        var mappingData = File.ReadAllText(mappingFile);
-                        var mapping = JsonConvert.DeserializeObject<Warehouse>(mappingData);
 
                         DateTime dateVal = DateTime.Now;
                         decimal dVal = 0;
@@ -390,7 +399,7 @@ namespace InvoiceService
                         }
                         //Fkey
                         if (!string.IsNullOrEmpty(inv.No))
-                            inv.Fkey = string.Format("{0}{1}{2}", inv.ComTaxCode, inv.No, tax.ToString("0"));
+                            inv.Fkey = string.Format("{0}{1}{2}{3}", inv.ComTaxCode, inv.No, tax.ToString("0"), DateTime.Now.ToString("ddMMyyyyhhmmss"));
 
                         //Parse thông tin khác
                         if (dSet.Tables.Contains("Order"))
@@ -428,22 +437,35 @@ namespace InvoiceService
                         List<string> lstpayment = new List<string>();
                         if (dSet.Tables.Contains("PaymentReference"))
                         {
-                            int paymentCount = dSet.Tables["PaymentReference"].Rows.Count;
-                            if (paymentCount <= 1)
-                                inv.PaymentMethod = dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString();
-                            else
-                            {
-                                for (int i = 0; i < paymentCount; i++)
-                                    lstpayment.Add(dSet.Tables["PaymentReference"].Rows[i]["PaymentType"].ToString());
-                                inv.PaymentMethod = string.Join("+", lstpayment);
-                            }
+                            inv.PaymentMethod = dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString();
+                            //int paymentCount = dSet.Tables["PaymentReference"].Rows.Count;
+                            //if (paymentCount <= 1)
+                            //    inv.PaymentMethod = dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString();
+                            //else
+                            //{
+                            //    for (int i = 0; i < paymentCount; i++)
+                            //        lstpayment.Add(dSet.Tables["PaymentReference"].Rows[i]["PaymentType"].ToString());
+                            //    inv.PaymentMethod = string.Join("+", lstpayment);
+                            //}
                         }
 
                         //Parse thông tin vận chuyển
-                        DataRow freightRow = dSet.Tables["Tax"].Rows[taxList.IndexOf(tax)];
-                        if (decimal.TryParse(freightRow["Total_Freight"].ToString(), out dVal))
-                            inv.Freight = Math.Abs(dVal);
-                        inv.TaxFreight = Math.Round(inv.Freight * tax / 100, MidpointRounding.AwayFromZero);
+                        //if (taxList.IndexOf(tax) == 0)
+                        //{
+                        if (tax == warehouse.TaxFreight)
+                        {
+                            DataRow freightRow = dSet.Tables["OrderPricing"].Rows[0];
+                            if (decimal.TryParse(freightRow["Total_Freight"].ToString(), out dVal))
+                                inv.Freight = Math.Abs(dVal);
+                            if (decimal.TryParse(freightRow["Total_Tax_Freight"].ToString(), out dVal))
+                                inv.TaxFreight = Math.Abs(dVal);
+                        }
+
+                        //}
+                        //DataRow freightRow = dSet.Tables["Tax"].Rows[taxList.IndexOf(tax)];
+                        //if (decimal.TryParse(freightRow["Total_Freight"].ToString(), out dVal))
+                        //    inv.Freight = Math.Abs(dVal);
+                        //inv.TaxFreight = Math.Round(inv.Freight * warehouse.Tax / 100, MidpointRounding.AwayFromZero);
 
                         //Parse thông tin hóa đơn điều chỉnh
                         if (dSet.Tables.Contains("InvoiceAdjustment"))
@@ -481,7 +503,8 @@ namespace InvoiceService
                         inv.Total = 0;
                         inv.Amount = 0;
 
-                        foreach (var item in lstItem.Where(x => x.TaxRate_1 == tax.ToString()).ToList())
+                        lstItem = lstItem.Where(x => x.TaxRate_1 == tax.ToString()).ToList();
+                        foreach (var item in lstItem)
                         {
                             ProductInv prod = new ProductInv();
                             //Halt_esct 22-05-2020 Fix lấy mã sản phẩm --BEGIN--
@@ -547,10 +570,6 @@ namespace InvoiceService
                 {
                     InvoiceVAT inv = new InvoiceVAT();
                     ILog log = LogManager.GetLogger(typeof(HerbalifeService));
-
-                    var mappingFile = Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]) + "\\Config\\warehouse.json";
-                    var mappingData = File.ReadAllText(mappingFile);
-                    var mapping = JsonConvert.DeserializeObject<Warehouse>(mappingData);
 
                     DateTime dateVal = DateTime.Now;
                     decimal dVal = 0;
@@ -637,15 +656,16 @@ namespace InvoiceService
                     List<string> lstpayment = new List<string>();
                     if (dSet.Tables.Contains("PaymentReference"))
                     {
-                        int paymentCount = dSet.Tables["PaymentReference"].Rows.Count;
-                        if (paymentCount <= 1)
-                            inv.PaymentMethod = dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString();
-                        else
-                        {
-                            for (int i = 0; i < paymentCount; i++)
-                                lstpayment.Add(dSet.Tables["PaymentReference"].Rows[i]["PaymentType"].ToString());
-                            inv.PaymentMethod = string.Join("+", lstpayment);
-                        }
+                        inv.PaymentMethod = dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString();
+                        //int paymentCount = dSet.Tables["PaymentReference"].Rows.Count;
+                        //if (paymentCount <= 1)
+                        //    inv.PaymentMethod = dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString();
+                        //else
+                        //{
+                        //    for (int i = 0; i < paymentCount; i++)
+                        //        lstpayment.Add(dSet.Tables["PaymentReference"].Rows[i]["PaymentType"].ToString());
+                        //    inv.PaymentMethod = string.Join("+", lstpayment);
+                        //}
                     }
 
                     //Parse thông tin vận chuyển
@@ -779,10 +799,6 @@ namespace InvoiceService
         {
             try
             {
-                var mappingFile = Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]) + "\\Config\\warehouse.json";
-                var mappingData = File.ReadAllText(mappingFile);
-                var mapping = JsonConvert.DeserializeObject<Warehouse>(mappingData);
-
                 CancelModels model = new CancelModels();
 
                 DateTime dateVal;
@@ -1033,21 +1049,24 @@ namespace InvoiceService
                 lstItem.Add(item);
             }
 
-            ItemInfo freight = new ItemInfo();
-            freight.selection = "2";
-            freight.isIncreaseItem = "false";
-            freight.itemName = "Phí giao hàng/Freight";
-            freight.taxPercentage = invoice.Freight != 0 ? Math.Round(invoice.TaxFreight / invoice.Freight * 100, MidpointRounding.AwayFromZero).ToString() : "10";
-            freight.itemTotalAmountWithoutTax = invoice.Freight.ToString();
-            freight.taxAmount = invoice.TaxFreight.ToString();
-            freight.lineNumber = "1";
-            if (isAdjust)
+            if (invoice.Freight != 0)
             {
-                freight.itemName = "Điều chỉnh giảm tiền hàng, tiền thuế của hàng hóa/dịch vụ: Phí giao hàng/Freight";
-                freight.adjustmentTaxAmount = "1";
+                ItemInfo freight = new ItemInfo();
+                freight.selection = "2";
                 freight.isIncreaseItem = "false";
+                freight.itemName = "Phí giao hàng/Freight";
+                freight.taxPercentage = mapping.WarehouseMapping.FirstOrDefault(c => c.Warehouse.Contains(invoice.Warehouse)).TaxFreight.ToString();
+                freight.itemTotalAmountWithoutTax = invoice.Freight.ToString();
+                freight.taxAmount = invoice.TaxFreight.ToString();
+                freight.lineNumber = "1";
+                if (isAdjust)
+                {
+                    freight.itemName = "Điều chỉnh giảm tiền hàng, tiền thuế của hàng hóa/dịch vụ: Phí giao hàng/Freight";
+                    freight.adjustmentTaxAmount = "1";
+                    freight.isIncreaseItem = "false";
+                }
+                lstItem.Add(freight);
             }
-            lstItem.Add(freight);
 
             if (isAdjust)
             {
