@@ -54,7 +54,9 @@ namespace InvoiceService
             string filePath = "";
             string orderNumber = "";
             int type = 1;
-
+            string tempFile = AppDomain.CurrentDomain.BaseDirectory + "Temp/temp.xml";
+            if (File.Exists(tempFile))
+                File.WriteAllText(tempFile, "");
             try
             {
 #if DEBUG
@@ -96,6 +98,7 @@ namespace InvoiceService
                 #endregion
 #else
                 //Xử lý file trong folder
+                
                 foreach (FtpListItem file in client.GetListing(ftpInfo.ReIssuePath).OrderBy(c => c.Modified))
                 {
                     if (file.Type != FtpFileSystemObjectType.File)
@@ -105,8 +108,6 @@ namespace InvoiceService
                     type = 1;
                     string message = "";
                     string mesError = "";
-                    string tempFile = AppDomain.CurrentDomain.BaseDirectory + "Temp/temp.xml";
-                    filePath = tempFile;
                     client.DownloadFile(tempFile, file.FullName);
                     List<InvoiceVAT> lstInv;
                     DataSet dSet = new DataSet();
@@ -160,8 +161,6 @@ namespace InvoiceService
                     type = 1;
                     string message = "";
                     string mesError = "";
-                    string tempFile = AppDomain.CurrentDomain.BaseDirectory + "Temp/temp.xml";
-                    filePath = tempFile;
                     client.DownloadFile(tempFile, file.FullName);
                     List<InvoiceVAT> lstInv;
                     DataSet dSet = new DataSet();
@@ -215,8 +214,6 @@ namespace InvoiceService
                     type = 2;
                     string message = "";
                     string mesError = "";
-                    string tempFile = AppDomain.CurrentDomain.BaseDirectory + "Temp/temp.xml";
-                    filePath = tempFile;
                     client.DownloadFile(tempFile, file.FullName);
                     List<InvoiceVAT> lstInv;
                     DataSet dSet = new DataSet();
@@ -270,8 +267,6 @@ namespace InvoiceService
                     type = 3;
                     string message = "";
                     string mesError = "";
-                    string tempFile = AppDomain.CurrentDomain.BaseDirectory + "Temp/temp.xml";
-                    filePath = tempFile;
                     client.DownloadFile(tempFile, file.FullName);
                     CancelModels model = ConvertToCancelModel(tempFile, ref mesError);
                     orderNumber = model.additionalReferenceDesc;
@@ -326,6 +321,8 @@ namespace InvoiceService
             }
             finally
             {
+                if (File.Exists(tempFile)) File.Delete(tempFile);
+                File.WriteAllText(tempFile,"");
                 client.Disconnect();
             }
         }
