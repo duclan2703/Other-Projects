@@ -1,7 +1,7 @@
-﻿{
+{
   "WarehouseMapping": [
     {
-      "Warehouse": [ "VA", "VB", "VG", "VP", "VT", "VO", "XS" ],
+      "Warehouse": [ "VA", "VB", "VC", "VT", "VO", "OV", "TB", "XS", "GC", "HD" ],
       "Taxcode": "0309069208",
       "Pattern": "01GTKT0/001",
       "Serial": "AA/19E",
@@ -11,12 +11,22 @@
       "TaxFreight": 8
     },
     {
-      "Warehouse": [ "VF", "VD" ],
+      "Warehouse": [ "VF", "VD", "HV", "NE", "HA", "UH" ],
       "Taxcode": "0309069208-001",
       "Pattern": "01GTKT0/001",
       "Serial": "AC/19E",
       "ResendPattern": "01GTKT0/001",
       "ResendSerial": "AD/19E",
+      "TT78": 0,
+      "TaxFreight": 8
+    },
+    {
+      "Warehouse": [ "VG", "VP", "IO" ],
+      "Taxcode": "0309069208-002",
+      "Pattern": "01GTKT0/001",
+      "Serial": "AE/19E",
+      "ResendPattern": "01GTKT0/001",
+      "ResendSerial": "AG/19E",
       "TT78": 0,
       "TaxFreight": 8
     }
