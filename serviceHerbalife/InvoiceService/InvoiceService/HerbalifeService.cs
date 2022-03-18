@@ -143,7 +143,8 @@ namespace InvoiceService
                         }
                         WriteNewResult(tempFile, lstresult, lstInv.FirstOrDefault());
                         log.Error(message);
-                        client.MoveFile(file.FullName, ftpInfo.IssueSuccessPath + "/" + file.Name);
+                        client.UploadFile(tempFile, ftpInfo.IssueSuccessPath + "/" + file.Name);
+                        client.DeleteFile(file.FullName);
                     }
                     else
                     {
@@ -199,7 +200,8 @@ namespace InvoiceService
                         }
                         WriteNewResult(tempFile, lstresult, lstInv.FirstOrDefault());
                         log.Error(message);
-                        client.MoveFile(file.FullName, ftpInfo.IssueSuccessPath + "/" + file.Name);
+                        client.UploadFile(tempFile, ftpInfo.IssueSuccessPath + "/" + file.Name);
+                        client.DeleteFile(file.FullName);
                     }
                     else
                     {
@@ -255,7 +257,8 @@ namespace InvoiceService
                         }
                         WriteNewResult(tempFile, lstresult, lstInv.FirstOrDefault());
                         log.Error(message);
-                        client.MoveFile(file.FullName, ftpInfo.IssueSuccessPath + "/" + file.Name);
+                        client.UploadFile(tempFile, ftpInfo.AdjustSuccessPath + "/" + file.Name);
+                        client.DeleteFile(file.FullName);
                     }
                     else
                     {
@@ -290,7 +293,8 @@ namespace InvoiceService
                         if (string.IsNullOrEmpty(result.errorCode))
                         {
                             message = "Cancel invoice successfully: " + orderNumber;
-                            client.MoveFile(file.FullName, ftpInfo.IssueSuccessPath + "/" + file.Name);
+                            client.UploadFile(tempFile, ftpInfo.CancelSuccessPath + "/" + file.Name);
+                            client.DeleteFile(file.FullName);
                             //File.Delete(tempFile);
                         }
                         else
