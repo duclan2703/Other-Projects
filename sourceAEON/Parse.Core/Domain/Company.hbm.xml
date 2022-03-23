@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2">
+  <class name="Parse.Core.Domain.Company,Parse.Core" table="Company" dynamic-update="true">
+    <id name="Id" column="Id" type="int">
+      <generator class="identity" />
+    </id>
+    <property name="InvPattern" column="InvPattern" type="string" length="100"/>
+    <property name="Name" column="Name" type="string" length="500"/>
+    <property name="TaxCode" column="TaxCode" type="string" length="200"/>
+    <property name="Address" column="Address" type="string" length="500"/>
+    <property name="BankName" column="BankName" type="string" length="500"/>
+    <property name="BankNumber" column="BankNumber" type="string" length="200"/>
+    <property name="Email" column="Email" type="string" length="200"/>
+    <property name="Fax" column="Fax" type="string" length="100"/>
+    <property name="Phone" column="Phone" type="string" length="100"/>
+    <property name="UserName" column="UserName" type="string" length="100"/>
+    <property name="PassWord" column="PassWord" type="string" length="100"/>
+    <property name="Domain" column="Domain" type="string" length="200"/>
+    <property name="Code" column="Code" type="string" length="50"/>
+    <property name="InvSerial" column="InvSerial" type="string" length="50"/>
+    <map name="Config" table="Config">
+      <key column="ComID"/>
+      <index column="Code" type="System.String" length="100"/>
+      <element column="Value" type="System.String" length="500"/>
+    </map>
+  </class>
+</hibernate-mapping>

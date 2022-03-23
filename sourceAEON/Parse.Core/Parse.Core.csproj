@@ -1,0 +1,164 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{5EF5A430-34FD-4474-BF85-631414F173CA}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Parse.Core</RootNamespace>
+    <AssemblyName>Parse.Core</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Bytescout.PDFExtractor, Version=9.1.0.3170, Culture=neutral, PublicKeyToken=f7dd1bd9d40a50eb, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\lib\Bytescout.PDFExtractor.dll</HintPath>
+    </Reference>
+    <Reference Include="Bytescout.PDFExtractor.OCRExtension, Version=9.1.0.3170, Culture=neutral, PublicKeyToken=f7dd1bd9d40a50eb, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\lib\Bytescout.PDFExtractor.OCRExtension.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraEditors.v17.2, Version=17.2.5.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a, processorArchitecture=MSIL">
+      <HintPath>..\lib\DevExpress.XtraEditors.v17.2.dll</HintPath>
+    </Reference>
+    <Reference Include="FX.Core">
+      <HintPath>..\lib\FX.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="FX.Data">
+      <HintPath>..\lib\FX.Data.dll</HintPath>
+    </Reference>
+    <Reference Include="log4net">
+      <HintPath>..\Lib\log4net.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.11.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="RestSharp, Version=105.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\RestSharp.105.1.0\lib\net45\RestSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AppContext.cs" />
+    <Compile Include="BuildXMLInvService.cs" />
+    <Compile Include="Domain\BussinessLog.cs" />
+    <Compile Include="Domain\Company.cs" />
+    <Compile Include="Domain\Config.cs" />
+    <Compile Include="Domain\Discount.cs" />
+    <Compile Include="Domain\Invoice.cs" />
+    <Compile Include="Domain\InvoiceBase.cs" />
+    <Compile Include="Domain\InvoiceVAT.cs" />
+    <Compile Include="Domain\InvTemplate.cs" />
+    <Compile Include="Domain\IProductInv.cs" />
+    <Compile Include="Domain\LogDetail.cs" />
+    <Compile Include="Domain\ProductInv.cs" />
+    <Compile Include="Domain\PublishInvModels.cs" />
+    <Compile Include="Domain\PublishResult.cs" />
+    <Compile Include="Domain\SapUpload.cs" />
+    <Compile Include="Domain\Setup.cs" />
+    <Compile Include="Implement\BussinessLogService.cs" />
+    <Compile Include="Implement\CompanyService.cs" />
+    <Compile Include="Implement\ConfigService.cs" />
+    <Compile Include="Implement\InvoiceVATService.cs" />
+    <Compile Include="Implement\LogDetailService.cs" />
+    <Compile Include="Implement\ProductInvService.cs" />
+    <Compile Include="Implement\SapUploadService.cs" />
+    <Compile Include="Implement\SetupService.cs" />
+    <Compile Include="IService\IAEONService.cs" />
+    <Compile Include="IService\IBussinessLogService.cs" />
+    <Compile Include="IService\ICompanyService.cs" />
+    <Compile Include="IService\IConfigService.cs" />
+    <Compile Include="IService\ICSVParserService.cs" />
+    <Compile Include="IService\IExcelParserService.cs" />
+    <Compile Include="IService\IInvoiceVATService.cs" />
+    <Compile Include="IService\IApiParserService.cs" />
+    <Compile Include="IService\ILogDetailService.cs" />
+    <Compile Include="IService\IParserService.cs" />
+    <Compile Include="IService\ISapUploadService.cs" />
+    <Compile Include="IService\ISpaParserService.cs" />
+    <Compile Include="IService\IMicrosParserService.cs" />
+    <Compile Include="IService\IOperaParserService.cs" />
+    <Compile Include="IService\IPoolingService.cs" />
+    <Compile Include="IService\IProductInvService.cs" />
+    <Compile Include="IService\ISetupService.cs" />
+    <Compile Include="Models\InvoiceInfo.cs" />
+    <Compile Include="Models\InvoiceModels.cs" />
+    <Compile Include="Models\MenuModels.cs" />
+    <Compile Include="NumberToLeter.cs" />
+    <Compile Include="Common.cs" />
+    <Compile Include="ParserResolveHelper.cs" />
+    <Compile Include="PublishUtil.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="APIHelper.cs" />
+    <Compile Include="PublishStatus.cs" />
+    <Compile Include="Utils\NumberUtil.cs" />
+    <Compile Include="Utils\PagingComponent.cs" />
+    <Compile Include="Utils\PdfUtils.cs" />
+    <Compile Include="Utils\ProxyConfig.cs" />
+    <Compile Include="XmlHelper.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Domain\Company.hbm.xml">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Domain\Setup.hbm.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Domain\InvoiceVAT.hbm.xml">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Domain\ProductInv.hbm.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Domain\BussinessLog.hbm.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Domain\Config.hbm.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Domain\LogDetail.hbm.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Domain\SapUpload.hbm.xml" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

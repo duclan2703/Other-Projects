@@ -1,0 +1,26 @@
+﻿[
+  {
+    "Id": "100",
+    "Code": "Micros",
+    "Caption": "Micros",
+    "ImageUri": "ExportToXLSX",
+    "ServiceName": "IMicrosParserService",
+    "FileExtensions": [ ".xlsx", ".xls" ]
+  },
+  {
+    "Id": "101",
+    "Code": "Opera",
+    "Caption": "Opera",
+    "ImageUri": "ExportToPDF",
+    "ServiceName": "IOperaParserService",
+    "FileExtensions": [ ".pdf" ]
+  },
+  {
+    "Id": "102",
+    "Code": "Spa",
+    "Caption": "Spa",
+    "ImageUri": "ExportToXLSX",
+    "ServiceName": "ISpaParserService",
+    "FileExtensions": [ ".xlsx", ".xls" ]
+  }
+]

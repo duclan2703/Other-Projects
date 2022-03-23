@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2">
+  <class name="Parse.Core.Domain.Config,Parse.Core" table="Config" dynamic-update="true">
+    <id name="Id" column="Id" type="int" unsaved-value="0">
+      <generator class="identity" />
+    </id>
+    <property name="ComID" column="ComID" type="int"/>
+    <property name="Code" column="Code" type="string" length="100"/>
+    <property name="Value" column="Value" type="string" length="500"/>
+  </class>
+</hibernate-mapping>
+

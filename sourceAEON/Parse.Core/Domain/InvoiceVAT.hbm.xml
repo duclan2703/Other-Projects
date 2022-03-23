@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2">
+  <class name="Parse.Core.Domain.InvoiceVAT,Parse.Core" table="InvoiceVAT" dynamic-update="true">
+    <id name="Id" column="Id" type="int">
+      <generator class="identity" />
+    </id>
+    <property name="AppName" column="AppName" type="string" length="100"/>
+    <property name="Fkey" column="Fkey" type="string" length="500"/>
+    <property name="Pattern" column="Pattern" type="string" length="100"/>
+    <property name="Serial" column="Serial" type="string" length="100"/>
+    <property name="No" column="No" type="string" length="50"/>
+    <property name="Publish" column="Publish" type="int"/>
+    <property name="MessageError" column="MessageError" type="string" length="4000"/>
+    <property name="Converted" column="Converted" type="bool"/>
+    <property name="ArisingDate" column="ArisingDate" type="DateTime"/>
+    <property name="PaymentMethod" column="PaymentMethod" type="string" length="100"/>
+    <property name="Buyer" column="Buyer" type="string" length="100"/>
+    <property name="CusName" column="CusName" type="string" length="500"/>
+    <property name="CusCode" column="CusCode" type="string" length="100"/>
+    <property name="CusAddress" column="CusAddress" type="string" length="500"/>
+    <property name="CusTaxCode" column="CusTaxCode" type="string" length="100"/>
+    <property name="CusPhone" column="CusPhone" type="string" length="100"/>
+    <property name="RoomNo" column="RoomNo" type="string" length="100"/>
+    <property name="BookingNo" column="BookingNo" type="string" length="100"/>
+    <property name="FolioNo" column="FolioNo" type="string" length="100"/>
+    <property name="ArrivalDate" column="ArrivalDate" type="string" length="100"/>
+    <property name="DepartureDate" column="DepartureDate" type="string" length="100"/>
+    <property name="ServiceCharge" column="ServiceCharge" type="decimal"/>
+    <property name="ServiceSpecial" column="ServiceSpecial" type="decimal"/>
+    <property name="Total" column="Total" type="decimal"/>
+    <property name="VATRate" column="VATRate" type="float"/>
+    <property name="VATAmount" column="VATAmount" type="decimal"/>
+    <property name="Amount" column="Amount" type="decimal"/>
+    <property name="AmountInWords" column="AmountInWords" type="string" length="500"/>
+    <property name="GuestNo" column="GuestNo" type="string" length="100"/>
+    <property name="VATSerCharge" column="VATSerCharge" type="float"/>
+    <property name="VATSerSpecial" column="VATSerSpecial" type="float"/>
+    <property name="CusEmail" column="CusEmail" type="string"/>
+    <property name="StaffId" column="StaffId" type="string"/>
+    <property name="DeliveryId" column="DeliveryId" type="string"/>
+    <property name="Weight" column="Weight" type="float"/>
+    <property name="Quantity" column="Quantity" type="decimal"/>
+    <property name="CusComName" column="CusComName" type="string"/>
+    <property name="DiscountAmount" column="DiscountAmount" type="decimal"/>
+    <property name="CusDeliveryAddress" column="CusDeliveryAddress" type="string"/>
+    <property name="CusBankName" column="CusBankName" type="string"/>
+    <property name="CusBankNo" column="CusBankNo" type="string"/>
+    <property name="FolioOrigin" column="FolioOrigin" type="string"/>
+
+    <!--<bag name="Products" table="ProductInv" lazy="false">
+      <key column="InvoiceID" />
+      <one-to-many class="Parse.Core.Domain.ProductInv,Parse.Core" />
+    </bag>-->
+
+
+  </class>
+</hibernate-mapping>
+
+

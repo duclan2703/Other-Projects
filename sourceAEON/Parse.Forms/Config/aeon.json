@@ -1,0 +1,10 @@
+﻿[
+  {
+    "Id": "100",
+    "Code": "AEON",
+    "Caption": "AEON",
+    "ImageUri": "ExportToXLSX",
+    "ServiceName": "IAEONService",
+    "FileExtensions": [ ".csv" ]
+  }
+]

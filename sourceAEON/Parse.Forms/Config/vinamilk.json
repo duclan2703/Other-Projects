@@ -1,0 +1,10 @@
+﻿[
+  {
+    "Id": "100",
+    "Code": "Excel",
+    "Caption": "Excel",
+    "ImageUri": "ExportToXLSX",
+    "ServiceName": "IExcelParserService",
+    "FileExtensions": [ ".xlsx", ".xls" ]
+  }
+]

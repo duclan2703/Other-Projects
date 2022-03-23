@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2">
+  <class name="Parse.Core.Domain.ProductInv,Parse.Core" table="ProductInv" dynamic-update="true">
+    <id name="Id" column="Id" type="int">
+      <generator class="identity" />
+    </id>
+    <property name="InvoiceID" column="InvoiceID" type="int"/>
+    <property name="Code" column="Code" type="string" length="100"/>
+    <property name="Name" column="Name" type="string" length="500"/>
+    <property name="Price" column="Price" type="decimal"/>
+    <property name="Quantity" column="Quantity" type="decimal"/>
+    <property name="Total" column="Total" type="decimal"/>
+    <property name="Amount" column="Amount" type="decimal"/>
+    <property name="Unit" column="Unit" type="string" length="100"/>
+    <property name="Type" column="Type" type="int"/>
+    <property name="ProDate" column="ProDate" type="string" length="50"/>
+    <property name="DiscountAmount" column="DiscountAmount" type="decimal"/>
+    <property name="Weight" column="Weight" type="float"/>
+    <property name="Remark" column="Remark" type="string"/>
+  </class>
+</hibernate-mapping>
+
+
+
