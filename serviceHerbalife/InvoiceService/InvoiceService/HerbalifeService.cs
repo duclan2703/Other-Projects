@@ -58,41 +58,64 @@ namespace InvoiceService
             {
 #if DEBUG
                 #region test
-                string fileTest = @"D:\Herbalife\NTS_VNVGWH_VN03779355_1.xml";
+                string fileTest = @"D:\Herbalife\VN_EINVOICE_CANCELLATION_VAK2260693_1.xml";
                 type = 1;
                 string messageTest = "";
                 string mesErrorTest = "";
                 List<InvoiceVAT> InvTest;
                 DataSet dSetTest = new DataSet();
                 dSetTest.ReadXml(fileTest);
-                InvTest = ConvertToInvoiceVAT(dSetTest, false, ref mesErrorTest);
-                orderNumber = InvTest.FirstOrDefault().No;
+                //InvTest = ConvertToInvoiceVAT(dSetTest, false, ref mesErrorTest);
+                //orderNumber = InvTest.FirstOrDefault().No;
+                List<CancelModels> model = ConvertToCancelModel(fileTest, ref messageTest);
+                orderNumber = model.FirstOrDefault().additionalReferenceDesc;
                 List<APIResult> lstresult = new List<APIResult>();
 
                 //Phát hành hóa đơn
                 if (string.IsNullOrEmpty(mesErrorTest))
                 {
-                    foreach (var item in InvTest)
+                    foreach (var item in model)
                     {
-                        var InvApi = ConvertToAPIModel(item, false, out string Errorms);
-                        APIResult result = SendInvoice(apiInfo, InvApi, item.ComTaxCode);
-                        lstresult.Add(result);
+                        var result = CancelInvoice(apiInfo, item);
+                        WriteCancelResult(fileTest, result);
                         if (string.IsNullOrEmpty(result.errorCode))
                         {
-                            messageTest = "Issue invoice successfully: " + item.No;
+                            //message = "Cancel invoice successfully: " + item.additionalReferenceDesc;
+                            //client.UploadFile(tempFile, ftpInfo.CancelSuccessPath + "/" + file.Name);
+                            //client.DeleteFile(file.FullName);
+                            //File.Delete(tempFile);
                         }
                         else
                         {
-                            messageTest = "Fail to issue invoice: " + item.No;
+                            //message = "Fail to cancel invoice: " + item.additionalReferenceDesc;
+                            //client.UploadFile(tempFile, ftpInfo.CancelFailedPath + "/" + file.Name);
+                            //File.Delete(tempFile);
+                            //client.DeleteFile(file.FullName);
+                            //SendFailedMail(file.Name, item.additionalReferenceDesc, result.errorCode, result.description, "", type);
                         }
-                        log.Error(messageTest);
+                        log.Error(string.Format("{0} {1}", messageTest, result.description));
                     }
-                    WriteNewResult(fileTest, lstresult, InvTest.FirstOrDefault());
+                    //foreach (var item in InvTest)
+                    //{
+                    //    var InvApi = ConvertToAPIModel(item, false, out string Errorms);
+                    //    APIResult result = SendInvoice(apiInfo, InvApi, item.ComTaxCode);
+                    //    lstresult.Add(result);
+                    //    if (string.IsNullOrEmpty(result.errorCode))
+                    //    {
+                    //        messageTest = "Issue invoice successfully: " + item.No;
+                    //    }
+                    //    else
+                    //    {
+                    //        messageTest = "Fail to issue invoice: " + item.No;
+                    //    }
+                    //    log.Error(messageTest);
+                    //}
+                    //WriteNewResult(fileTest, lstresult, InvTest.FirstOrDefault());
                 }
                 else
                 {
-                    WriteErrorResult(fileTest, mesErrorTest);
-                    log.Error("Fail to issue invoice: " + InvTest.FirstOrDefault().No + mesErrorTest);
+                    //WriteErrorResult(fileTest, mesErrorTest);
+                    //log.Error("Fail to issue invoice: " + InvTest.FirstOrDefault().No + mesErrorTest);
                 }
                 #endregion
 #else
@@ -283,6 +306,7 @@ namespace InvoiceService
 
                 foreach (FtpListItem file in client.GetListing(ftpInfo.CancelXMLPath).OrderBy(c => c.Modified))
                 {
+                    bool sent = false;
                     if (file.Type != FtpFileSystemObjectType.File)
                         continue;
                     fileName = file.Name;
@@ -293,29 +317,33 @@ namespace InvoiceService
                     string tempFile = AppDomain.CurrentDomain.BaseDirectory + "Temp/temp.xml";
                     File.WriteAllText(tempFile, "");
                     client.DownloadFile(tempFile, file.FullName);
-                    CancelModels model = ConvertToCancelModel(tempFile, ref mesError);
-                    orderNumber = model.additionalReferenceDesc;
+                    List<CancelModels> lstcancel = ConvertToCancelModel(tempFile, ref mesError);
 
                     if (string.IsNullOrEmpty(mesError))
                     {
-                        var result = CancelInvoice(apiInfo, model);
-                        WriteCancelResult(tempFile, result);
-                        if (string.IsNullOrEmpty(result.errorCode))
+                        foreach (var item in lstcancel)
                         {
-                            message = "Cancel invoice successfully: " + orderNumber;
-                            client.UploadFile(tempFile, ftpInfo.CancelSuccessPath + "/" + file.Name);
-                            client.DeleteFile(file.FullName);
-                            //File.Delete(tempFile);
+                            var result = CancelInvoice(apiInfo, item);
+                            WriteCancelResult(tempFile, result);
+                            if (string.IsNullOrEmpty(result.errorCode))
+                            {
+                                message = "Cancel invoice successfully: " + item.additionalReferenceDesc;
+                                //File.Delete(tempFile);
+                            }
+                            else
+                            {
+                                message = "Fail to cancel invoice: " + item.additionalReferenceDesc;
+                                client.UploadFile(tempFile, ftpInfo.CancelFailedPath + "/" + file.Name);
+                                //File.Delete(tempFile);
+                                client.DeleteFile(file.FullName);
+                                SendFailedMail(file.Name, item.additionalReferenceDesc, result.errorCode, result.description, "", type);
+                                sent = true;
+                            }
+                            log.Error(string.Format("{0} {1}", message, result.description));
                         }
-                        else
-                        {
-                            message = "Fail to cancel invoice: " + orderNumber;
-                            client.UploadFile(tempFile, ftpInfo.CancelFailedPath + "/" + file.Name);
-                            //File.Delete(tempFile);
-                            client.DeleteFile(file.FullName);
-                            SendFailedMail(file.Name, orderNumber, result.errorCode, result.description, "", type);
-                        }
-                        log.Error(string.Format("{0} {1}", message, result.description));
+                        if (sent) continue;
+                        client.UploadFile(tempFile, ftpInfo.CancelSuccessPath + "/" + file.Name);
+                        client.DeleteFile(file.FullName);
                     }
                     else
                     {
@@ -323,8 +351,8 @@ namespace InvoiceService
                         client.UploadFile(tempFile, ftpInfo.CancelFailedPath + "/" + file.Name);
                         //File.Delete(tempFile);
                         client.DeleteFile(file.FullName);
-                        SendFailedMail(file.Name, orderNumber, "", "", mesError, type);
-                        log.Error("Fail to cancel invoice: " + orderNumber + mesError);
+                        SendFailedMail(file.Name, lstcancel.FirstOrDefault().additionalReferenceDesc, "", "", mesError, type);
+                        log.Error("Fail to cancel invoice: " + lstcancel.FirstOrDefault().additionalReferenceDesc + mesError);
                     }
                 }
 #endif
@@ -420,6 +448,7 @@ namespace InvoiceService
                             {
                                 mesError += " - warehouse code invalid";
                             }
+                            inv.TT78 = warehouse.TT78;
                             //Fkey
                             if (!string.IsNullOrEmpty(inv.No))
                                 inv.Fkey = string.Format("{0}{1}{2}{3}", inv.ComTaxCode.Replace("-", ""), inv.No, tax.ToString("0"), DateTime.Now.ToString("ddMMyymmss"));
@@ -823,41 +852,46 @@ namespace InvoiceService
             }).ToList();
         }
 
-        public CancelModels ConvertToCancelModel(string filePath, ref string mesError)
+        public List<CancelModels> ConvertToCancelModel(string filePath, ref string mesError)
         {
+            List<CancelModels> lstcancel = new List<CancelModels>();
             try
             {
-                CancelModels model = new CancelModels();
-
                 DateTime dateVal;
                 DataSet dSet = new DataSet();
                 dSet.ReadXml(filePath);
                 DataRow infoRow = dSet.Tables["CancelInvoice"].Rows[0];
-                string whcode = infoRow["WarehouseNumber"].ToString();
-                var warehouse = mapping.WarehouseMapping.FirstOrDefault(c => c.Warehouse.Contains(whcode));
-                if (warehouse != null)
+                string[] lstinvNo = infoRow["TaxInvoiceNumber"].ToString().Split('-');
+                foreach (var item in lstinvNo)
                 {
-                    model.codeTax = warehouse.Taxcode;
+                    CancelModels model = new CancelModels();
+                    model.invNo = item;
+                    string whcode = infoRow["WarehouseNumber"].ToString();
+                    var warehouse = mapping.WarehouseMapping.FirstOrDefault(c => c.Warehouse.Contains(whcode));
+                    if (warehouse != null)
+                    {
+                        model.codeTax = warehouse.Taxcode;
+                    }
+                    else
+                    {
+                        mesError += " - warehouse code invalid";
+                    }
+                    model.additionalReferenceDesc = infoRow["OrderNumber"].ToString();
+                    if (DateTime.TryParseExact(infoRow["NTSDate"].ToString(), "dd-MMM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateVal))
+                        model.dateIssue = dateVal.ToString("yyyyMMddHHmmss");
+                    else
+                    {
+                        mesError += " - sai định dạng ngày hóa đơn";
+                    }
+                    if (DateTime.TryParseExact(infoRow["OrderCancellationDate"].ToString(), "dd-MMM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateVal))
+                        model.addRefDate = dateVal.ToString("yyyyMMddHHmmss");
+                    else
+                    {
+                        mesError += " - sai định dạng ngày hủy";
+                    }
+                    lstcancel.Add(model);
                 }
-                else
-                {
-                    mesError += " - warehouse code invalid";
-                }
-                model.invNo = infoRow["TaxInvoiceNumber"].ToString();
-                model.additionalReferenceDesc = infoRow["OrderNumber"].ToString();
-                if (DateTime.TryParseExact(infoRow["NTSDate"].ToString(), "dd-MMM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateVal))
-                    model.dateIssue = dateVal.ToString("yyyyMMddHHmmss");
-                else
-                {
-                    mesError += " - sai định dạng ngày hóa đơn";
-                }
-                if (DateTime.TryParseExact(infoRow["OrderCancellationDate"].ToString(), "dd-MMM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateVal))
-                    model.addRefDate = dateVal.ToString("yyyyMMddHHmmss");
-                else
-                {
-                    mesError += " - sai định dạng ngày hủy";
-                }
-                return model;
+                return lstcancel;
             }
             catch (Exception ex)
             {
@@ -1220,7 +1254,7 @@ namespace InvoiceService
                     keyTag = "QSName",
                     stringValue = invoice.QSName,
                     valueType = "text",
-                    keyLabel = "Tên_Name",
+                    keyLabel = "Tên_QSname",
                 });
 
                 if (!string.IsNullOrEmpty(invoice.VolumePoints))
