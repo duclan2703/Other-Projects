@@ -39,8 +39,8 @@ namespace Parse.Core.Utils
 
             if (decS < 0)
             {
-                decS = -decS;
-                //s = decS.ToString();
+                decS *= -1;
+                s = decS.ToString();
                 booAm = true;
             }
             i = s.Length;

@@ -561,6 +561,8 @@ namespace InvoiceService
                                 ProductInv prod = new ProductInv();
                                 //Halt_esct 22-05-2020 Fix lấy mã sản phẩm --BEGIN--
                                 //prod.Code = item.StockingSKU;
+                                if (string.IsNullOrWhiteSpace(item.ProductCode))
+                                    continue;
                                 prod.Code = item.ProductCode;
                                 //Halt_esct 22-05-2020 Fix lấy mã sản phẩm --END--
                                 prod.Name = item.ItemDescription;
@@ -766,6 +768,8 @@ namespace InvoiceService
                             ProductInv prod = new ProductInv();
                             //Halt_esct 22-05-2020 Fix lấy mã sản phẩm --BEGIN--
                             //prod.Code = item.StockingSKU;
+                            if (string.IsNullOrWhiteSpace(item.ProductCode))
+                                continue;
                             prod.Code = item.ProductCode;
                             //Halt_esct 22-05-2020 Fix lấy mã sản phẩm --END--
                             prod.Name = item.ItemDescription;
