@@ -58,59 +58,59 @@ namespace InvoiceService
             {
 #if DEBUG
                 #region test
-                string fileTest = @"D:\Herbalife\VN_EINVOICE_CANCELLATION_VAK2260693_1.xml";
+                string fileTest = @"D:\Herbalife\NTS_VNVGWH_VN03806751_1.xml";
                 type = 1;
                 string messageTest = "";
                 string mesErrorTest = "";
                 List<InvoiceVAT> InvTest;
                 DataSet dSetTest = new DataSet();
                 dSetTest.ReadXml(fileTest);
-                //InvTest = ConvertToInvoiceVAT(dSetTest, false, ref mesErrorTest);
-                //orderNumber = InvTest.FirstOrDefault().No;
-                List<CancelModels> model = ConvertToCancelModel(fileTest, ref messageTest);
-                orderNumber = model.FirstOrDefault().additionalReferenceDesc;
+                InvTest = ConvertToInvoiceVAT(dSetTest, false, ref mesErrorTest);
+                orderNumber = InvTest.FirstOrDefault().No;
+                //List<CancelModels> model = ConvertToCancelModel(fileTest, ref messageTest);
+                //orderNumber = model.FirstOrDefault().additionalReferenceDesc;
                 List<APIResult> lstresult = new List<APIResult>();
 
                 //Phát hành hóa đơn
                 if (string.IsNullOrEmpty(mesErrorTest))
                 {
-                    foreach (var item in model)
-                    {
-                        var result = CancelInvoice(apiInfo, item);
-                        WriteCancelResult(fileTest, result);
-                        if (string.IsNullOrEmpty(result.errorCode))
-                        {
-                            //message = "Cancel invoice successfully: " + item.additionalReferenceDesc;
-                            //client.UploadFile(tempFile, ftpInfo.CancelSuccessPath + "/" + file.Name);
-                            //client.DeleteFile(file.FullName);
-                            //File.Delete(tempFile);
-                        }
-                        else
-                        {
-                            //message = "Fail to cancel invoice: " + item.additionalReferenceDesc;
-                            //client.UploadFile(tempFile, ftpInfo.CancelFailedPath + "/" + file.Name);
-                            //File.Delete(tempFile);
-                            //client.DeleteFile(file.FullName);
-                            //SendFailedMail(file.Name, item.additionalReferenceDesc, result.errorCode, result.description, "", type);
-                        }
-                        log.Error(string.Format("{0} {1}", messageTest, result.description));
-                    }
-                    //foreach (var item in InvTest)
+                    //foreach (var item in model)
                     //{
-                    //    var InvApi = ConvertToAPIModel(item, false, out string Errorms);
-                    //    APIResult result = SendInvoice(apiInfo, InvApi, item.ComTaxCode);
-                    //    lstresult.Add(result);
+                    //    var result = CancelInvoice(apiInfo, item);
+                    //    WriteCancelResult(fileTest, result);
                     //    if (string.IsNullOrEmpty(result.errorCode))
                     //    {
-                    //        messageTest = "Issue invoice successfully: " + item.No;
+                    //        //message = "Cancel invoice successfully: " + item.additionalReferenceDesc;
+                    //        //client.UploadFile(tempFile, ftpInfo.CancelSuccessPath + "/" + file.Name);
+                    //        //client.DeleteFile(file.FullName);
+                    //        //File.Delete(tempFile);
                     //    }
                     //    else
                     //    {
-                    //        messageTest = "Fail to issue invoice: " + item.No;
+                    //        //message = "Fail to cancel invoice: " + item.additionalReferenceDesc;
+                    //        //client.UploadFile(tempFile, ftpInfo.CancelFailedPath + "/" + file.Name);
+                    //        //File.Delete(tempFile);
+                    //        //client.DeleteFile(file.FullName);
+                    //        //SendFailedMail(file.Name, item.additionalReferenceDesc, result.errorCode, result.description, "", type);
                     //    }
-                    //    log.Error(messageTest);
+                    //    log.Error(string.Format("{0} {1}", messageTest, result.description));
                     //}
-                    //WriteNewResult(fileTest, lstresult, InvTest.FirstOrDefault());
+                    foreach (var item in InvTest)
+                    {
+                        var InvApi = ConvertToAPIModel(item, false, out string Errorms);
+                        APIResult result = SendInvoice(apiInfo, InvApi, item.ComTaxCode);
+                        lstresult.Add(result);
+                        if (string.IsNullOrEmpty(result.errorCode))
+                        {
+                            messageTest = "Issue invoice successfully: " + item.No;
+                        }
+                        else
+                        {
+                            messageTest = "Fail to issue invoice: " + item.No;
+                        }
+                        log.Error(messageTest);
+                    }
+                    WriteNewResult(fileTest, lstresult, InvTest.FirstOrDefault());
                 }
                 else
                 {
@@ -489,16 +489,16 @@ namespace InvoiceService
                             List<string> lstpayment = new List<string>();
                             if (dSet.Tables.Contains("PaymentReference"))
                             {
-                                inv.PaymentMethod = dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString();
-                                //int paymentCount = dSet.Tables["PaymentReference"].Rows.Count;
-                                //if (paymentCount <= 1)
-                                //    inv.PaymentMethod = dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString();
-                                //else
-                                //{
-                                //    for (int i = 0; i < paymentCount; i++)
-                                //        lstpayment.Add(dSet.Tables["PaymentReference"].Rows[i]["PaymentType"].ToString());
-                                //    inv.PaymentMethod = string.Join("+", lstpayment);
-                                //}
+                                //inv.PaymentMethod = dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString();
+                                int paymentCount = dSet.Tables["PaymentReference"].Rows.Count;
+                                if (paymentCount <= 1)
+                                    inv.PaymentMethod = dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString();
+                                else
+                                {
+                                    for (int i = 0; i < paymentCount; i++)
+                                        lstpayment.Add(dSet.Tables["PaymentReference"].Rows[i]["PaymentType"].ToString());
+                                    inv.PaymentMethod = string.Join(",", lstpayment);
+                                }
                             }
 
                             //Parse thông tin vận chuyển
@@ -708,16 +708,17 @@ namespace InvoiceService
                         List<string> lstpayment = new List<string>();
                         if (dSet.Tables.Contains("PaymentReference"))
                         {
-                            inv.PaymentMethod = dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString();
-                            //int paymentCount = dSet.Tables["PaymentReference"].Rows.Count;
-                            //if (paymentCount <= 1)
-                            //    inv.PaymentMethod = dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString();
-                            //else
-                            //{
-                            //    for (int i = 0; i < paymentCount; i++)
-                            //        lstpayment.Add(dSet.Tables["PaymentReference"].Rows[i]["PaymentType"].ToString());
-                            //    inv.PaymentMethod = string.Join("+", lstpayment);
-                            //}
+                            //inv.PaymentMethod = dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString();
+                            int paymentCount = dSet.Tables["PaymentReference"].Rows.Count;
+                            if (paymentCount <= 1)
+                                inv.PaymentMethod = dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString();
+                            else if (paymentCount > 1)
+                            {
+                                for (int i = 0; i < paymentCount; i++)
+                                    lstpayment.Add(dSet.Tables["PaymentReference"].Rows[i]["PaymentType"].ToString());
+                                inv.PaymentMethod = string.Join(",", lstpayment);
+                            }
+                            else inv.PaymentMethod = "";
                         }
 
                         //Parse thông tin vận chuyển
@@ -1065,8 +1066,9 @@ namespace InvoiceService
                 }
                 objInvoice.paymentStatus = "true";
 
-                objInvoice.paymentType = invoice.PaymentMethod;
-                //objInvoice.paymentTypeName = "0";
+                //objInvoice.paymentType = "TM/CK";
+                //string[] payments = invoice.PaymentMethod.Split(',');
+                //objInvoice.paymentTypeName = payments.Count() < 1 ? "TM/CK" : "";
                 objInvoice.cusGetInvoiceRight = true;
                 objInvoice.buyerIdType = "1";
                 objInvoice.buyerIdNo = invoice.No;
@@ -1298,9 +1300,13 @@ namespace InvoiceService
                 model.itemInfo = lstItem;
                 model.summarizeInfo = objSummary;
                 model.metadata = lstMetaData;
-                if (!string.IsNullOrEmpty(invoice.PaymentMethod))
+                if (!string.IsNullOrWhiteSpace(invoice.PaymentMethod))
                 {
                     model.payments = new List<Payment>() { new Payment() { paymentMethodName = invoice.PaymentMethod } };
+                }
+                else
+                {
+                    model.payments = new List<Payment>() { new Payment() { paymentMethod = "3", paymentMethodName = "TM/CK" } };
                 }
                 model.taxBreakdowns = new List<TaxBreakdown>();
                 model.taxBreakdowns.Add(new TaxBreakdown() { taxPercentage = invoice.VATRate, taxableAmount = invoice.Total, taxAmount = invoice.VATAmount });

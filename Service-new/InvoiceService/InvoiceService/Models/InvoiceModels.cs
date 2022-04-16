@@ -48,7 +48,6 @@ namespace InvoiceService.Models
 
     public class Payment
     {
-        public string paymentMethod { get; set; }
         public string paymentMethodName { get; set; }
     }
 }

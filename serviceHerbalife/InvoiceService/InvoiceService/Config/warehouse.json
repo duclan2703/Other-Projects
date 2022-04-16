@@ -13,11 +13,11 @@
     {
       "Warehouse": [ "VF", "VD", "HV", "NE", "HA", "UH" ],
       "Taxcode": "0309069208-001",
-      "Pattern": "01GTKT0/001",
-      "Serial": "AC/19E",
+      "Pattern": "1/001",
+      "Serial": "C22TAC",
       "ResendPattern": "01GTKT0/001",
       "ResendSerial": "AD/19E",
-      "TT78": 0,
+      "TT78": 1,
       "TaxFreight": 8
     },
     {
