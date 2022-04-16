@@ -385,6 +385,7 @@ namespace InvoiceService
             {
                 List<InvoiceVAT> lstinv = new List<InvoiceVAT>();
                 List<decimal> taxList = new List<decimal>();
+                var rowFreight = dSet.Tables["OrderPricing"].Rows[0];
                 int taxCount = dSet.Tables["Tax"].Rows.Count;
                 for (int i = 0; i < taxCount; i++)
                 {
@@ -397,8 +398,9 @@ namespace InvoiceService
                 }
                 if (taxList.Count > 1)
                 {
-                    foreach (var tax in taxList)
+                    for (int i = 0; i < taxList.Count; i++)
                     {
+                        decimal tax = taxList[i];
                         try
                         {
                             InvoiceVAT inv = new InvoiceVAT();
@@ -495,29 +497,12 @@ namespace InvoiceService
                                     inv.PaymentMethod = dSet.Tables["PaymentReference"].Rows[0]["PaymentType"].ToString();
                                 else
                                 {
-                                    for (int i = 0; i < paymentCount; i++)
-                                        lstpayment.Add(dSet.Tables["PaymentReference"].Rows[i]["PaymentType"].ToString());
+                                    for (int j = 0; j < paymentCount; j++)
+                                        lstpayment.Add(dSet.Tables["PaymentReference"].Rows[j]["PaymentType"].ToString());
                                     inv.PaymentMethod = string.Join(",", lstpayment);
                                 }
                             }
 
-                            //Parse thông tin vận chuyển
-                            //if (taxList.IndexOf(tax) == 0)
-                            //{
-                            if (tax == warehouse.TaxFreight)
-                            {
-                                DataRow freightRow = dSet.Tables["OrderPricing"].Rows[0];
-                                if (decimal.TryParse(freightRow["Total_Freight"].ToString(), out dVal))
-                                    inv.Freight = Math.Abs(dVal);
-                                if (decimal.TryParse(freightRow["Total_Tax_Freight"].ToString(), out dVal))
-                                    inv.TaxFreight = Math.Abs(dVal);
-                            }
-
-                            //}
-                            //DataRow freightRow = dSet.Tables["Tax"].Rows[taxList.IndexOf(tax)];
-                            //if (decimal.TryParse(freightRow["Total_Freight"].ToString(), out dVal))
-                            //    inv.Freight = Math.Abs(dVal);
-                            //inv.TaxFreight = Math.Round(inv.Freight * warehouse.Tax / 100, MidpointRounding.AwayFromZero);
 
                             //Parse thông tin hóa đơn điều chỉnh
                             if (dSet.Tables.Contains("InvoiceAdjustment"))
@@ -543,6 +528,21 @@ namespace InvoiceService
                                 //    mesError += " - error parse OrderCancellationDate";
                                 //}
                                 //Halt_esct chỉnh lại ngày phát hành hóa đơn điều chỉnh 14-05-2020 --END--
+                            }
+
+                            //Parse thông tin vận chuyển
+                            if (tax == warehouse.TaxFreight)
+                            {
+                                DataRow freightRow = dSet.Tables["OrderPricing"].Rows[0];
+                                if (decimal.TryParse(freightRow["Total_Freight"].ToString(), out dVal))
+                                    inv.Freight = Math.Abs(dVal);
+                                if (decimal.TryParse(freightRow["Total_Tax_Freight"].ToString(), out dVal))
+                                    inv.TaxFreight = Math.Abs(dVal);
+                            }
+                            else
+                            {
+                                if (i == taxList.Count - 1)
+                                    taxList.Add(warehouse.TaxFreight);
                             }
 
                             //Parse thông tin sản phẩm
@@ -1066,9 +1066,8 @@ namespace InvoiceService
                 }
                 objInvoice.paymentStatus = "true";
 
-                //objInvoice.paymentType = "TM/CK";
-                //string[] payments = invoice.PaymentMethod.Split(',');
-                //objInvoice.paymentTypeName = payments.Count() < 1 ? "TM/CK" : "";
+                objInvoice.paymentType = "TM/CK";
+                objInvoice.paymentTypeName = "TM/CK";
                 objInvoice.cusGetInvoiceRight = true;
                 objInvoice.buyerIdType = "1";
                 objInvoice.buyerIdNo = invoice.No;
@@ -1293,6 +1292,15 @@ namespace InvoiceService
                     keyLabel = "Ngày_date",
                 });
 
+                lstMetaData.Add(new Metadata
+                {
+                    invoiceCustomFieldId = 1289,
+                    keyTag = "paymentName",
+                    stringValue = invoice.PaymentMethod,
+                    valueType = "text",
+                    keyLabel = "Hình thức thanh toán",
+                });
+
                 InvoiceModels model = new InvoiceModels();
                 model.generalInvoiceInfo = objInvoice;
                 model.buyerInfo = objBuyer;
@@ -1303,10 +1311,6 @@ namespace InvoiceService
                 if (!string.IsNullOrWhiteSpace(invoice.PaymentMethod))
                 {
                     model.payments = new List<Payment>() { new Payment() { paymentMethodName = invoice.PaymentMethod } };
-                }
-                else
-                {
-                    model.payments = new List<Payment>() { new Payment() { paymentMethod = "3", paymentMethodName = "TM/CK" } };
                 }
                 model.taxBreakdowns = new List<TaxBreakdown>();
                 model.taxBreakdowns.Add(new TaxBreakdown() { taxPercentage = invoice.VATRate, taxableAmount = invoice.Total, taxAmount = invoice.VATAmount });
