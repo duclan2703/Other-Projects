@@ -453,7 +453,7 @@ namespace InvoiceService
                         inv.TT78 = warehouse.TT78;
                         //Fkey
                         if (!string.IsNullOrEmpty(inv.No))
-                            inv.Fkey = string.Format("{0}{1}{2}{3}", inv.ComTaxCode.Replace("-", ""), inv.No, tax.ToString("0"), DateTime.Now.ToString("ddMMyymmss"));
+                            inv.Fkey = string.Format("{0}{1}{2}", inv.ComTaxCode.Replace("-", ""), inv.No, tax.ToString("0"));
 
                         //Parse thông tin khác
                         if (dSet.Tables.Contains("Order"))
@@ -963,7 +963,7 @@ namespace InvoiceService
 
 
                 List<Metadata> lstMetaData = new List<Metadata>();
-
+                //string ordermonth = string.Format("{0}-{1}", invoice.OrderMonth.Substring(5), invoice.OrderMonth.Substring(0, 4));
                 lstMetaData.Add(new Metadata
                 {
                     invoiceCustomFieldId = 1233,
