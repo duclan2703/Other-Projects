@@ -58,7 +58,7 @@ namespace InvoiceService
             {
 #if DEBUG
                 #region test
-                string fileTest = @"D:\Herbalife\NTS_VNXSWH_VN03891764_1.xml";
+                string fileTest = @"D:\Herbalife\NTS_VNXSWH_VN04062602_1.xml";
                 type = 1;
                 string messageTest = "";
                 string mesErrorTest = "";
@@ -106,7 +106,20 @@ namespace InvoiceService
                         }
                         else
                         {
-                            messageTest = "Fail to issue invoice: " + item.No;
+                            if (result.errorCode.Contains("TRANSACTION_IS_BEING_PROCESSED"))
+                            {
+                                item.Fkey = string.Format("{0}{1}{2}", item.ComTaxCode.Replace("-", ""), item.No, DateTime.Now.ToString("ddMMyyyy"));
+                                InvApi = ConvertToAPIModel(item, false, out string mesError);
+                                result = SendInvoice(apiInfo, InvApi, item.ComTaxCode);
+                                if (string.IsNullOrEmpty(result.errorCode))
+                                {
+                                    messageTest += string.Format("Issue invoice successfully: {0} {1}", item.No, result.description);
+                                    //File.Delete(tempFile);
+                                    continue;
+                                }
+                            }
+                            messageTest += string.Format("Fail to issue invoice:  {0} {1}", item.No, result.description);
+                            //File.Delete(tempFile);
                         }
                         log.Error(messageTest);
                     }
@@ -150,7 +163,14 @@ namespace InvoiceService
                             if (sent) continue;
                             var InvApi = ConvertToAPIModel(Inv, false, out string Error);
                             APIResult result = SendInvoice(apiInfo, InvApi, Inv.ComTaxCode);
-                            lstresult.Add(result);
+                            if (result == null)
+                            {
+                                client.UploadFile(tempFile, ftpInfo.IssueFailedPath + "/" + file.Name);
+                                //File.Delete(tempFile);
+                                client.DeleteFile(file.FullName);
+                                SendFailedMail(file.Name, lstInv.FirstOrDefault().No, "", "", mesError, type);
+                                continue;
+                            }
                             if (string.IsNullOrEmpty(result.errorCode))
                             {
                                 message += string.Format("Issue invoice successfully: {0} {1}", Inv.No, result.description);
@@ -158,12 +178,25 @@ namespace InvoiceService
                             }
                             else
                             {
+                                if (result.errorCode.Contains("TRANSACTION_IS_BEING_PROCESSED"))
+                                {
+                                    Inv.Fkey = string.Format("{0}{1}{2}", Inv.ComTaxCode.Replace("-", ""), Inv.No, DateTime.Now.ToString("ddMMyyyy"));
+                                    InvApi = ConvertToAPIModel(Inv, false, out mesError);
+                                    result = SendInvoice(apiInfo, InvApi, Inv.ComTaxCode);
+                                    if (string.IsNullOrEmpty(result.errorCode))
+                                    {
+                                        message += string.Format("Issue invoice successfully: {0} {1}", Inv.No, result.description);
+                                        //File.Delete(tempFile);
+                                        continue;
+                                    }
+                                }
                                 message += string.Format("Fail to issue invoice:  {0} {1}", Inv.No, result.description);
                                 client.MoveFile(file.FullName, ftpInfo.IssueFailedPath + "/" + file.Name);
                                 //File.Delete(tempFile);
                                 SendFailedMail(file.Name, Inv.No, result.errorCode, result.description, "", type);
                                 sent = true;
                             }
+                            lstresult.Add(result);
                         }
                         log.Error(message);
                         if (sent) continue;
@@ -211,20 +244,40 @@ namespace InvoiceService
                             if (sent) continue;
                             var InvApi = ConvertToAPIModel(Inv, false, out string Error);
                             APIResult result = SendInvoice(apiInfo, InvApi, Inv.ComTaxCode);
-                            lstresult.Add(result);
+                            if (result == null)
+                            {
+                                client.UploadFile(tempFile, ftpInfo.IssueFailedPath + "/" + file.Name);
+                                //File.Delete(tempFile);
+                                client.DeleteFile(file.FullName);
+                                SendFailedMail(file.Name, lstInv.FirstOrDefault().No, "", "", mesError, type);
+                                continue;
+                            }
                             if (string.IsNullOrEmpty(result.errorCode))
                             {
-                                message += string.Format("Issue invoice successfully: {0} {1} {2}", Inv.No, lstInv.IndexOf(Inv), result.description);
+                                message += string.Format("Issue invoice successfully: {0} {1}", Inv.No, result.description);
                                 //File.Delete(tempFile);
                             }
                             else
                             {
-                                message += string.Format("Fail to issue invoice:  {0} {1} {2}", Inv.No, lstInv.IndexOf(Inv), result.description);
+                                if (result.errorCode.Contains("TRANSACTION_IS_BEING_PROCESSED"))
+                                {
+                                    Inv.Fkey = string.Format("{0}{1}{2}", Inv.ComTaxCode.Replace("-", ""), Inv.No, DateTime.Now.ToString("ddMMyyyy"));
+                                    InvApi = ConvertToAPIModel(Inv, false, out mesError);
+                                    result = SendInvoice(apiInfo, InvApi, Inv.ComTaxCode);
+                                    if (string.IsNullOrEmpty(result.errorCode))
+                                    {
+                                        message += string.Format("Issue invoice successfully: {0} {1}", Inv.No, result.description);
+                                        //File.Delete(tempFile);
+                                        continue;
+                                    }
+                                }
+                                message += string.Format("Fail to issue invoice:  {0} {1}", Inv.No, result.description);
                                 client.MoveFile(file.FullName, ftpInfo.IssueFailedPath + "/" + file.Name);
                                 //File.Delete(tempFile);
                                 SendFailedMail(file.Name, Inv.No, result.errorCode, result.description, "", type);
                                 sent = true;
                             }
+                            lstresult.Add(result);
                         }
                         log.Error(message);
                         if (sent) continue;
@@ -272,20 +325,40 @@ namespace InvoiceService
                             if (sent) continue;
                             var InvApi = ConvertToAPIModel(Inv, false, out string Error);
                             APIResult result = SendInvoice(apiInfo, InvApi, Inv.ComTaxCode);
-                            lstresult.Add(result);
+                            if (result == null)
+                            {
+                                client.UploadFile(tempFile, ftpInfo.AdjustFailedPath + "/" + file.Name);
+                                //File.Delete(tempFile);
+                                client.DeleteFile(file.FullName);
+                                SendFailedMail(file.Name, lstInv.FirstOrDefault().No, "", "", mesError, type);
+                                continue;
+                            }
                             if (string.IsNullOrEmpty(result.errorCode))
                             {
-                                message += string.Format("Issue invoice successfully: {0} {1} {2}", Inv.No, lstInv.IndexOf(Inv), result.description);
+                                message += string.Format("Issue invoice successfully: {0} {1}", Inv.No, result.description);
                                 //File.Delete(tempFile);
                             }
                             else
                             {
-                                message += string.Format("Fail to issue invoice:  {0} {1} {2}", Inv.No, lstInv.IndexOf(Inv), result.description);
-                                client.MoveFile(file.FullName, ftpInfo.AdjustFailedPath + "/" + file.Name);
+                                if (result.errorCode.Contains("TRANSACTION_IS_BEING_PROCESSED"))
+                                {
+                                    Inv.Fkey = string.Format("{0}{1}{2}", Inv.ComTaxCode.Replace("-", ""), Inv.No, DateTime.Now.ToString("ddMMyyyy"));
+                                    InvApi = ConvertToAPIModel(Inv, false, out mesError);
+                                    result = SendInvoice(apiInfo, InvApi, Inv.ComTaxCode);
+                                    if (string.IsNullOrEmpty(result.errorCode))
+                                    {
+                                        message += string.Format("Issue invoice successfully: {0} {1}", Inv.No, result.description);
+                                        //File.Delete(tempFile);
+                                        continue;
+                                    }
+                                }
+                                message += string.Format("Fail to issue invoice:  {0} {1}", Inv.No, result.description);
+                                client.MoveFile(file.FullName, ftpInfo.IssueFailedPath + "/" + file.Name);
                                 //File.Delete(tempFile);
                                 SendFailedMail(file.Name, Inv.No, result.errorCode, result.description, "", type);
                                 sent = true;
                             }
+                            lstresult.Add(result);
                         }
                         log.Error(message);
                         if (sent) continue;
@@ -324,6 +397,14 @@ namespace InvoiceService
                         foreach (var item in lstcancel)
                         {
                             var result = CancelInvoice(apiInfo, item);
+                            if (result == null)
+                            {
+                                client.UploadFile(tempFile, ftpInfo.CancelFailedPath + "/" + file.Name);
+                                //File.Delete(tempFile);
+                                client.DeleteFile(file.FullName);
+                                SendFailedMail(file.Name, lstcancel.FirstOrDefault().additionalReferenceDesc, "", "", mesError, type);
+                                continue;
+                            }
                             WriteCancelResult(tempFile, result);
                             if (string.IsNullOrEmpty(result.errorCode))
                             {
@@ -698,65 +779,74 @@ namespace InvoiceService
 
         public void WriteNewResult(string filePath, List<APIResult> results, InvoiceVAT inv)
         {
-            // đọc xml
-            XmlDocument doc = new XmlDocument();
-            doc.Load(filePath);
-
-            var result = results.FirstOrDefault();
-            List<string> lstinvNo = new List<string>();
-            for (int i = 0; i < results.Count(); i++)
+            try
             {
-                lstinvNo.Add(results[i].result.invoiceNo);
-            }
+                // đọc xml
+                XmlDocument doc = new XmlDocument();
+                doc.Load(filePath);
 
-            XmlElement issueDateElement = doc.CreateElement("IssueDate");
-            // gán dữ liệu vào node
-            issueDateElement.InnerText = inv.ArisingDate.ToString("dd/MM/yyyy");
-            // append node vào root node
-            doc.DocumentElement.AppendChild(issueDateElement);
+                var result = results.FirstOrDefault();
+                if (result == null) return; 
+                List<string> lstinvNo = new List<string>();
+                for (int i = 0; i < results.Count(); i++)
+                {
+                    lstinvNo.Add(results[i].result.invoiceNo);
+                }
 
-            // tạo node mới
-            XmlElement patternElement = doc.CreateElement("Pattern");
-            // gán dữ liệu vào node
-            patternElement.InnerText = inv.Pattern;
-            // append node vào root node
-            doc.DocumentElement.AppendChild(patternElement);
-
-            // tạo node mới
-            XmlElement serialElement = doc.CreateElement("Serial");
-            // gán dữ liệu vào node
-            serialElement.InnerText = inv.Serial;
-            // append node vào root node
-            doc.DocumentElement.AppendChild(serialElement);
-
-            if (result.result != null)
-            {
-                // tạo node mới
-                XmlElement invnoElement = doc.CreateElement("InvNo");
+                XmlElement issueDateElement = doc.CreateElement("IssueDate");
                 // gán dữ liệu vào node
-                invnoElement.InnerText = string.Join("-", lstinvNo);
+                issueDateElement.InnerText = inv.ArisingDate.ToString("dd/MM/yyyy");
                 // append node vào root node
-                doc.DocumentElement.AppendChild(invnoElement);
-            }
-            else
-            {
-                // tạo node mới
-                XmlElement errorcodeElement = doc.CreateElement("ErrorCode");
-                // gán dữ liệu vào node
-                errorcodeElement.InnerText = result.errorCode;
-                // append node vào root node
-                doc.DocumentElement.AppendChild(errorcodeElement);
+                doc.DocumentElement.AppendChild(issueDateElement);
 
                 // tạo node mới
-                XmlElement errordescElement = doc.CreateElement("ErrorDescription");
+                XmlElement patternElement = doc.CreateElement("Pattern");
                 // gán dữ liệu vào node
-                errordescElement.InnerText = result.description;
+                patternElement.InnerText = inv.Pattern;
                 // append node vào root node
-                doc.DocumentElement.AppendChild(errordescElement);
-            }
-            // save lại file
-            doc.Save(filePath);
+                doc.DocumentElement.AppendChild(patternElement);
 
+                // tạo node mới
+                XmlElement serialElement = doc.CreateElement("Serial");
+                // gán dữ liệu vào node
+                serialElement.InnerText = inv.Serial;
+                // append node vào root node
+                doc.DocumentElement.AppendChild(serialElement);
+
+                if (result.result != null)
+                {
+                    // tạo node mới
+                    XmlElement invnoElement = doc.CreateElement("InvNo");
+                    // gán dữ liệu vào node
+                    invnoElement.InnerText = string.Join("-", lstinvNo);
+                    // append node vào root node
+                    doc.DocumentElement.AppendChild(invnoElement);
+                }
+                else
+                {
+                    // tạo node mới
+                    XmlElement errorcodeElement = doc.CreateElement("ErrorCode");
+                    // gán dữ liệu vào node
+                    errorcodeElement.InnerText = result.errorCode;
+                    // append node vào root node
+                    doc.DocumentElement.AppendChild(errorcodeElement);
+
+                    // tạo node mới
+                    XmlElement errordescElement = doc.CreateElement("ErrorDescription");
+                    // gán dữ liệu vào node
+                    errordescElement.InnerText = result.description;
+                    // append node vào root node
+                    doc.DocumentElement.AppendChild(errordescElement);
+                }
+                // save lại file
+                doc.Save(filePath);
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+                return;
+            }
+            
         }
 
         public void WriteCancelResult(string filePath, APIResult result)
