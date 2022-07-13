@@ -58,7 +58,7 @@ namespace InvoiceService
             {
 #if DEBUG
                 #region test
-                string fileTest = @"D:\Herbalife\NTS_VNXSWH_VN04062602_1.xml";
+                string fileTest = @"D:\Herbalife\NTS_VNVAWH_VA108351_1.xml";
                 type = 1;
                 string messageTest = "";
                 string mesErrorTest = "";
@@ -622,7 +622,11 @@ namespace InvoiceService
                         }
                         else
                         {
-                            if (i == taxList.Count - 1 && !taxList.Contains(warehouse.TaxFreight))
+                            DataRow freightRow = dSet.Tables["OrderPricing"].Rows[0];
+                            if (decimal.TryParse(freightRow["Total_Freight"].ToString(), out dVal))
+                                inv.Freight = Math.Abs(dVal);
+
+                            if (i == taxList.Count - 1 && !taxList.Contains(warehouse.TaxFreight) && inv.Freight > 0)
                                 taxList.Add(warehouse.TaxFreight);
                         }
 
